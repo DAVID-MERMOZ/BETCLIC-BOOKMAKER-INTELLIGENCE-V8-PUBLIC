@@ -12,6 +12,8 @@ class MergeDatabaseCheckpointTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             local = Path(directory) / "local.db"
             remote = Path(directory) / "remote.db"
+            # La fusion exige une base locale existante, meme vide.
+            sqlite3.connect(local).close()
             with sqlite3.connect(remote) as conn:
                 conn.execute("""
                     CREATE TABLE provider_results (
