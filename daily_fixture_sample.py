@@ -91,7 +91,9 @@ def main():
         "prediction_1x2", "prob_home", "prob_draw", "prob_away",
         "balanced_prediction", "balanced_prob_home", "balanced_prob_draw",
         "balanced_prob_away", "training_n", "training_classes",
-        "model_status", "validation_status", "history_quality", "form_matches_home",\n        "form_matches_away", "market_status", "max_abs_edge_pp", "comparison_status",\n        "action_status", "feature_definition", "note",
+        "model_status", "validation_status", "history_quality", "form_matches_home",
+        "form_matches_away", "market_status", "max_abs_edge_pp", "comparison_status",
+        "action_status", "feature_definition", "note",
     ]
     with OUT.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
