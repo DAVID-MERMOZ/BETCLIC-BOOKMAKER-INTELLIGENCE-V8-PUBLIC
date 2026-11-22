@@ -61,6 +61,15 @@ class TeamFormTests(unittest.TestCase):
         self.assertAlmostEqual(sum(result[2].values()), 1.0, places=8)
         self.assertEqual(set(result[2]), set(CLASSES))
 
+
+    def test_large_model_market_divergence_is_flagged_for_review(self):
+        from team_form_model_experiment import market_comparison_status
+        model = {"HOME": 0.15, "DRAW": 0.45, "AWAY": 0.40}
+        market = {"HOME": 0.60, "DRAW": 0.20, "AWAY": 0.20}
+        self.assertEqual(market_comparison_status(model, market),
+                         "REVIEW_LARGE_DIVERGENCE")
+        self.assertEqual(market_comparison_status(model, None), "NO_MARKET")
+
     def test_walk_forward_uses_only_prior_samples(self):
         rows = []
         for i in range(15):
