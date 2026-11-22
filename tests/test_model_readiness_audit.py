@@ -2,7 +2,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
-from model_readiness_audit import audit_model_readiness
+from model_readiness_audit import audit_model_readiness, MIN_LABELED_MATCHES
 
 
 class ModelReadinessAuditTests(unittest.TestCase):
@@ -32,6 +32,9 @@ class ModelReadinessAuditTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_default_threshold_is_pilot_60_matches(self):
+        self.assertEqual(MIN_LABELED_MATCHES, 60)
 
     def test_counts_only_pre_kickoff_prices(self):
         result = audit_model_readiness(self.db, min_labeled_matches=1)
