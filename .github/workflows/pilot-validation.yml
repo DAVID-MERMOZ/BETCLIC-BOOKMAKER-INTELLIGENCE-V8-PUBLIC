@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "team_form_model_experiment.py"
+      - "daily_fixture_sample.py"
       - "baseline_market_evaluation.py"
       - "tests/**"
       - "dashboard.py"
