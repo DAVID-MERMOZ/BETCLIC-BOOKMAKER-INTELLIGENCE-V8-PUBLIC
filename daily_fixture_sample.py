@@ -6,7 +6,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
+from sklearn.linear_model import LogisticRegression
 from baseline_market_evaluation import norm, parse_utc
+from team_form_model_experiment import build_team_dataset
 
 DB = Path("data/betclic_history.db")
 MODEL = Path("artifacts/team_form_model.joblib")
@@ -78,6 +80,11 @@ def main():
     print("Historique fournisseur charge :",len(history))
     payload=joblib.load(MODEL)
     model=payload["model"]
+    training_samples, _ = build_team_dataset(DB)
+    balanced_model = LogisticRegression(C=0.1, solver="lbfgs", max_iter=2000,
+                                        random_state=42, class_weight="balanced")
+    balanced_model.fit([r["features"] for r in training_samples],
+                       [r["outcome"] for r in training_samples])
     now=datetime.now(timezone.utc)
     rows=[]
     for home,away,kickoff_s,league in FIXTURES:
@@ -95,13 +102,33 @@ def main():
         for label,p in zip(model.classes_,model.predict_proba([vector])[0]):
             probs[label]=float(p)
         pick=max(probs,key=probs.get)
+        balanced_probs={c:0.0 for c in ("HOME","DRAW","AWAY")}
+        for label,p in zip(balanced_model.classes_,balanced_model.predict_proba([vector])[0]):
+            balanced_probs[label]=float(p)
+        balanced_pick=max(balanced_probs,key=balanced_probs.get)
+        def recent(rows, club):
+            names={norm(x) for x in ALIASES[norm(club)]}
+            out=[]
+            for r in rows:
+                is_home=r["home"] in names
+                scored,conceded=(r["hg"],r["ag"]) if is_home else (r["ag"],r["hg"])
+                out.append(f"{r['date'].date()}:{scored}-{conceded}")
+            return "|".join(out)
         rows.append({"date_local":"2026-11-22","kickoff_utc":kickoff.isoformat(),
           "league":league,"home_team":home,"away_team":away,"prediction_1x2":pick,
           "prob_home":round(probs["HOME"],4),"prob_draw":round(probs["DRAW"],4),
-          "prob_away":round(probs["AWAY"],4),"home_prior_n":hn,"away_prior_n":an,
+          "prob_away":round(probs["AWAY"],4),"prediction_balanced":balanced_pick,
+          "balanced_prob_home":round(balanced_probs["HOME"],4),
+          "balanced_prob_draw":round(balanced_probs["DRAW"],4),
+          "balanced_prob_away":round(balanced_probs["AWAY"],4),
+          "home_ppg":round(hf[0],3),"home_gf_pg":round(hf[1],3),
+          "home_ga_pg":round(hf[2],3),"away_ppg":round(af[0],3),
+          "away_gf_pg":round(af[1],3),"away_ga_pg":round(af[2],3),
+          "home_recent_scores":recent(hr,home),"away_recent_scores":recent(ar,away),
+          "home_prior_n":hn,"away_prior_n":an,
           "model_status":"EXPERIMENTAL_15_MATCH_TRAINING_NO_CV",
-          "note":"Prediction exploratoire, sans validation croisee ni cote Betclic integree."})
-        print("PREDICTION :",home,"-",away,pick,probs,"historique",hn,an)
+          "note":"Deux variantes exploratoires; aucune validation croisee ni cote Betclic integree."})
+        print("PREDICTION :",home,"-",away,pick,probs,"| BALANCED:",balanced_pick,balanced_probs,"historique",hn,an)
     OUT.parent.mkdir(parents=True,exist_ok=True)
     with OUT.open("w",newline="",encoding="utf-8") as f:
         fields=list(rows[0]) if rows else ["date_local","kickoff_utc","league","home_team","away_team","prediction_1x2","prob_home","prob_draw","prob_away","home_prior_n","away_prior_n","model_status","note"]
