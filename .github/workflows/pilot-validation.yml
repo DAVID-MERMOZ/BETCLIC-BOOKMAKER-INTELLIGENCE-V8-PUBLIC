@@ -1,0 +1,68 @@
+name: BETCLIC V8.1 - Pilot model validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "team_form_model_experiment.py"
+      - "baseline_market_evaluation.py"
+      - "tests/**"
+      - "dashboard.py"
+      - "requirements.txt"
+      - ".github/workflows/pilot-validation.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: betclic-pilot-validation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dependances du pilote
+        run: pip install scikit-learn
+
+      - name: Restaurer la base privee en lecture seule
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN"
+          mkdir -p data /tmp/betclic-pilot
+          gh release download betclic-db-latest \
+            --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 \
+            --pattern "betclic_history.db.gz" \
+            --dir /tmp/betclic-pilot
+          gzip -dc /tmp/betclic-pilot/betclic_history.db.gz > data/betclic_history.db
+          test -s data/betclic_history.db
+          python -c "import sqlite3; c=sqlite3.connect('file:data/betclic_history.db?mode=ro', uri=True); print('SQLITE:', c.execute('PRAGMA integrity_check').fetchone()[0]); print('TABLES:', c.execute(\"SELECT count(*) FROM sqlite_master WHERE type='table'\").fetchone()[0]); c.close()"
+
+      - name: Executer les tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Entrainer le pilote sur les matchs admissibles
+        run: python team_form_model_experiment.py
+
+      - name: Publier le modele et le rapport du pilote
+        if: always() && (hashFiles('reports/*.csv') != '' || hashFiles('artifacts/*.joblib') != '')
+        uses: actions/upload-artifact@v4
+        with:
+          name: betclic-pilot-model-${{ github.run_id }}
+          path: |
+            reports/*.csv
+            artifacts/*.joblib
+          if-no-files-found: warn
+          retention-days: 30
