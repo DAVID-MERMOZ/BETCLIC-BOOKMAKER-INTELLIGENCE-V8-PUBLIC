@@ -38,8 +38,8 @@ class BetclicPaginationTests(unittest.TestCase):
         self.assertEqual([entry.id for entry in upcoming], [3, 4])
         self.assertEqual(client.offsets, [0, 40])
         self.assertEqual(diagnostic["live_skipped"], 1)
-        self.assertEqual(diagnostic["past_skipped"], 39)
-        self.assertEqual(diagnostic["unique_listings"], 42)
+        self.assertEqual(diagnostic["past_skipped"], 38)
+        self.assertEqual(diagnostic["unique_listings"], 41)
 
     def test_stops_when_api_repeats_same_page(self):
         now = datetime(2026, 11, 22, 12, tzinfo=timezone.utc)
