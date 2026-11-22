@@ -30,15 +30,16 @@ MIN_CLASS_COUNT_FOR_LOO = 2
 
 
 def team_form(history, team, kickoff):
+    key = team_key(team)
     prior = [r for r in history if r["date"] < kickoff and
-             (r["home"] == team_key(team) or r["away"] == team_key(team))]
+             (r["home"] == key or r["away"] == key)]
     prior.sort(key=lambda r: r["date"])
     prior = prior[-ROLLING_N:]
     if len(prior) < MIN_PRIOR_MATCHES:
         return None
     points, scored, conceded = [], [], []
     for r in prior:
-        is_home = r["home"] == team_key(team)
+        is_home = r["home"] == key
         gf = r["hg"] if is_home else r["ag"]
         ga = r["ag"] if is_home else r["hg"]
         scored.append(gf)
