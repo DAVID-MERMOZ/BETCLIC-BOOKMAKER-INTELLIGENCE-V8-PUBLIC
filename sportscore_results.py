@@ -6,6 +6,7 @@ Attribution requise par le fournisseur : Powered by SportScore.
 import json
 import sqlite3
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -17,7 +18,8 @@ BASE_URL = "https://sportscore.com/api/v1/fixtures/"
 PROVIDER = "sportscore"
 
 
-def fetch_day(day):
+def fetch_day(day, max_attempts=5):
+    """Retry les erreurs temporaires du fournisseur sans checkpoint incomplet."""
     query = urllib.parse.urlencode({
         "sport": "football",
         "date": day.isoformat(),
@@ -28,8 +30,30 @@ def fetch_day(day):
         f"{BASE_URL}?{query}",
         headers={"User-Agent": "Betclic-Bookmaker-Intelligence/8.1"},
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        payload = json.loads(response.read().decode("utf-8"))
+    for attempt in range(max_attempts):
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as exc:
+            retryable = exc.code in (408, 425, 429, 500, 502, 503, 504)
+            if not retryable or attempt == max_attempts - 1:
+                raise
+            retry_after = exc.headers.get("Retry-After") if exc.headers else None
+            try:
+                delay = min(60, max(1, int(retry_after))) if retry_after else min(30, 2 ** attempt)
+            except (TypeError, ValueError):
+                delay = min(30, 2 ** attempt)
+            print(f"SportScore HTTP {exc.code} pour {day}; nouvelle tentative "
+                  f"{attempt + 2}/{max_attempts} dans {delay}s")
+            time.sleep(delay)
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt == max_attempts - 1:
+                raise
+            delay = min(30, 2 ** attempt)
+            print(f"SportScore reseau indisponible pour {day}; nouvelle tentative "
+                  f"{attempt + 2}/{max_attempts} dans {delay}s ({exc})")
+            time.sleep(delay)
     matches = payload.get("matches", payload.get("data", []))
     if isinstance(matches, dict):
         matches = matches.get("matches", [])
