@@ -6,6 +6,14 @@ on:
       - main
     paths-ignore:
       - "data/betclic_history.db"
+      - "team_form_model_experiment.py"
+      - "baseline_market_evaluation.py"
+      - "tests/**"
+      - "dashboard.py"
+      - "requirements.txt"
+      - "README.md"
+      - ".github/workflows/main.yml"
+      - ".github/workflows/pilot-validation.yml"
 
   workflow_dispatch:
 
