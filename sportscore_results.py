@@ -104,29 +104,73 @@ def normalize(match, day):
     )
 
 
-def collect(days_back=180):
+def ensure_collection_table(db_path=DB_PATH):
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS provider_collection_days (
+                provider TEXT NOT NULL,
+                utc_date TEXT NOT NULL,
+                status TEXT NOT NULL CHECK (status = 'COMPLETE'),
+                fixtures_seen INTEGER NOT NULL DEFAULT 0,
+                results_saved INTEGER NOT NULL DEFAULT 0,
+                fetched_at TEXT NOT NULL,
+                PRIMARY KEY (provider, utc_date)
+            )
+        """)
+
+
+def collect(days_back=365, db_path=DB_PATH):
+    """Backfill resumable: chaque journée validée est persistée et checkpointée."""
+    ensure_collection_table(db_path)
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=days_back)
-    rows, api_count, rejected = {}, 0, 0
+    rows, api_count, rejected, skipped_days = {}, 0, 0, 0
     cursor = start
     while cursor <= today:
+        day_key = cursor.isoformat()
+        with sqlite3.connect(db_path) as conn:
+            done = conn.execute(
+                "SELECT 1 FROM provider_collection_days WHERE provider=? AND utc_date=? AND status='COMPLETE'",
+                (PROVIDER, day_key)
+            ).fetchone()
+        if done:
+            skipped_days += 1
+            cursor += timedelta(days=1)
+            continue
+
         fixtures = fetch_day(cursor)
         api_count += 1
+        day_rows = {}
+        day_rejected = 0
         for item in fixtures:
             row = normalize(item, cursor)
             if row:
-                rows[row[1]] = row
+                day_rows[row[1]] = row
             else:
-                rejected += 1
-        print(f"{cursor.isoformat()} : {len(fixtures)} fixtures, "
-              f"{sum(1 for x in fixtures if normalize(x, cursor))} scores retenus")
+                day_rejected += 1
+
+        # Les résultats sont persistés avant le checkpoint.
+        store(list(day_rows.values()), db_path=db_path)
+        fetched_at = datetime.now(timezone.utc).isoformat()
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("""
+                INSERT INTO provider_collection_days (
+                    provider, utc_date, status, fixtures_seen, results_saved, fetched_at
+                ) VALUES (?, ?, 'COMPLETE', ?, ?, ?)
+                ON CONFLICT(provider, utc_date) DO UPDATE SET
+                    status='COMPLETE', fixtures_seen=excluded.fixtures_seen,
+                    results_saved=excluded.results_saved, fetched_at=excluded.fetched_at
+            """, (PROVIDER, day_key, len(fixtures), len(day_rows), fetched_at))
+        rows.update(day_rows)
+        rejected += day_rejected
+        print(f"{day_key} : {len(fixtures)} fixtures, {len(day_rows)} scores retenus")
         cursor += timedelta(days=1)
-    return list(rows.values()), api_count, rejected, start, today
+    return list(rows.values()), api_count, rejected, start, today, skipped_days
 
 
-def store(rows):
+def store(rows, db_path=DB_PATH):
     fetched_at = datetime.now(timezone.utc).isoformat()
-    with sqlite3.connect(DB_PATH) as conn:
+    with sqlite3.connect(db_path) as conn:
         for row in rows:
             conn.execute("""
                 INSERT INTO provider_results (
@@ -153,8 +197,11 @@ def main():
         print("ERREUR : base SQLite absente.")
         return 2
     try:
-        rows, calls, rejected, start, end = collect()
-        total = store(rows)
+        rows, calls, rejected, start, end, skipped_days = collect()
+        with sqlite3.connect(DB_PATH) as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM provider_results WHERE provider=?", (PROVIDER,)
+            ).fetchone()[0]
     except urllib.error.HTTPError as exc:
         print(f"ERREUR SportScore HTTP {exc.code}: "
               f"{exc.read().decode('utf-8', errors='replace')[:500]}")
@@ -163,10 +210,11 @@ def main():
         print(f"ERREUR SportScore : {type(exc).__name__}: {exc}")
         return 1
     print("FOURNISSEUR : SportScore")
-    print("Profondeur historique demandee : 180 jours")
+    print("Profondeur historique cible : 365 jours (backfill incremental et reprenable)")
     print(f"Fenetre UTC : {start} -> {end}")
-    print("Appels API :", calls)
-    print("Resultats uniques enregistres :", len(rows))
+    print("Appels API effectues pendant ce run :", calls)
+    print("Jours deja complets ignores :", skipped_days)
+    print("Resultats uniques ajoutes pendant ce run :", len(rows))
     print("Lignes ignorees / format incomplet :", rejected)
     print("Total SportScore en base :", total)
     print("RAPPROCHEMENT BETCLIC : NON EFFECTUE")
