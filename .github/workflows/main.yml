@@ -121,6 +121,11 @@ jobs:
       - name: Evaluer le modele independant de forme des equipes
         run: python team_form_model_experiment.py
 
+      - name: Archiver les predictions et evaluer les resultats confirmes
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: python prediction_history.py
+
       - name: Generer le rapport de rapprochement (lecture seule)
         run: python match_results_report.py
 
