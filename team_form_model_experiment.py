@@ -10,7 +10,7 @@ import sklearn
 from sklearn.linear_model import LogisticRegression
 
 from baseline_market_evaluation import (
-    CLASSES, MARKET, build_dataset, classify_selection, fair_probs, parse_utc, score_metrics, split_teams,
+    CLASSES, MARKET, build_dataset, classify_selection, fair_probs, parse_utc, score_metrics, split_teams as split_teams_norm,
 )
 from match_results_report import norm as canonical_team_norm, squad_profile, split_teams
 
@@ -188,7 +188,7 @@ def evaluate(samples, market_rows):
 
 def latest_complete_1x2_snapshot(odds_rows, match_name, cutoff):
     """Dernier snapshot Betclic 1X2 complet avant cutoff, marge retiree."""
-    home, away = split_teams(match_name)
+    home, away = split_teams_norm(match_name)
     if not home or not away:
         return None
     snapshots = defaultdict(dict)
