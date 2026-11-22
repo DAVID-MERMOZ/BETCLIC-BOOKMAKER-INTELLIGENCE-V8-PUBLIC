@@ -116,6 +116,15 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(prediction_action_status("STANDARD_3_PLUS",
             "NO_LARGE_DIVERGENCE", "VALIDATED"), "ELIGIBLE_FOR_REVIEW_ONLY")
 
+    def test_model_probability_maps_are_normalized_and_fail_closed(self):
+        from baseline_market_evaluation import validate_probability_map
+        valid = validate_probability_map({"HOME": .2, "DRAW": .3, "AWAY": .5})
+        self.assertAlmostEqual(sum(valid.values()), 1.0)
+        with self.assertRaises(ValueError):
+            validate_probability_map({"HOME": .2, "DRAW": .3, "AWAY": .4})
+        with self.assertRaises(ValueError):
+            validate_probability_map({"HOME": 1.1, "DRAW": -.1, "AWAY": 0.0})
+
     def test_walk_forward_uses_only_prior_samples(self):
         rows = []
         for i in range(15):
