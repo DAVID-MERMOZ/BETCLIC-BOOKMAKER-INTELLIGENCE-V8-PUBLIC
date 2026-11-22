@@ -148,7 +148,7 @@ def collect(days_back=365, db_path=DB_PATH):
     ensure_collection_table(db_path)
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=days_back)
-    rows, api_count, rejected, skipped_days = {}, 0, 0, 0
+    rows, api_count, rejected, skipped_days, failed_days = {}, 0, 0, 0, []
     cursor = start
     while cursor <= today:
         day_key = cursor.isoformat()
@@ -162,7 +162,14 @@ def collect(days_back=365, db_path=DB_PATH):
             cursor += timedelta(days=1)
             continue
 
-        fixtures = fetch_day(cursor)
+        try:
+            fixtures = fetch_day(cursor)
+        except Exception as exc:
+            # Ne pas checkpoint une date incomplete; laisser le pipeline continuer.
+            failed_days.append(day_key)
+            print(f"SportScore indisponible le {day_key}: {type(exc).__name__}: {exc}")
+            print("Backfill interrompu proprement; les dates manquantes seront retentees au prochain run.")
+            break
         api_count += 1
         day_rows = {}
         day_rejected = 0
@@ -189,7 +196,7 @@ def collect(days_back=365, db_path=DB_PATH):
         rejected += day_rejected
         print(f"{day_key} : {len(fixtures)} fixtures, {len(day_rows)} scores retenus")
         cursor += timedelta(days=1)
-    return list(rows.values()), api_count, rejected, start, today, skipped_days
+    return list(rows.values()), api_count, rejected, start, today, skipped_days, failed_days
 
 
 def store(rows, db_path=DB_PATH):
@@ -221,7 +228,7 @@ def main():
         print("ERREUR : base SQLite absente.")
         return 2
     try:
-        rows, calls, rejected, start, end, skipped_days = collect()
+        rows, calls, rejected, start, end, skipped_days, failed_days = collect()
         with sqlite3.connect(DB_PATH) as conn:
             total = conn.execute(
                 "SELECT COUNT(*) FROM provider_results WHERE provider=?", (PROVIDER,)
@@ -240,10 +247,15 @@ def main():
     print("Jours deja complets ignores :", skipped_days)
     print("Resultats uniques ajoutes pendant ce run :", len(rows))
     print("Lignes ignorees / format incomplet :", rejected)
+    print("Jours en echec non checkpointes :", len(failed_days))
     print("Total SportScore en base :", total)
     print("RAPPROCHEMENT BETCLIC : NON EFFECTUE")
     print("Attribution : https://sportscore.com/")
-    print("STATUT : SUCCES")
+    if failed_days:
+        print("STATUT : PARTIEL - reprise au prochain run")
+    else:
+        print("STATUT : SUCCES")
+    # Une panne fournisseur ne bloque pas les autres collectes ni la sauvegarde.
     return 0
 
 
