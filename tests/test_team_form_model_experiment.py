@@ -1,7 +1,8 @@
 import unittest
 from datetime import datetime, timezone, timedelta
 
-from team_form_model_experiment import team_form, evaluate, fit_final_model, team_key
+from team_form_model_experiment import (team_form, evaluate, fit_final_model, team_key,
+                                        latest_complete_1x2_snapshot)
 from baseline_market_evaluation import CLASSES
 
 
@@ -40,6 +41,25 @@ class TeamFormTests(unittest.TestCase):
         history = [{"date": t - timedelta(days=1), "home": "alpha",
                     "away": "beta", "hg": 1, "ag": 0}]
         self.assertIsNone(team_form(history, "alpha", t))
+
+    def test_latest_complete_1x2_snapshot_uses_latest_complete_pre_match_quotes(self):
+        cutoff = datetime(2026, 11, 22, 12, tzinfo=timezone.utc)
+        rows = [
+            ("LNZ Cherkasy", 2.10, "2026-11-22T10:00:00+00:00"),
+            ("X", 3.20, "2026-11-22T10:00:00+00:00"),
+            ("Polissya Zhytomyr", 3.40, "2026-11-22T10:00:00+00:00"),
+            # Plus recent, mais incomplet : ne doit pas remplacer le snapshot complet.
+            ("LNZ Cherkasy", 2.00, "2026-11-22T11:00:00+00:00"),
+            # Après cutoff : exclu.
+            ("X", 3.00, "2026-11-22T13:00:00+00:00"),
+        ]
+        result = latest_complete_1x2_snapshot(
+            rows, "LNZ Cherkasy - Polissya Zhytomyr", cutoff
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result[0], datetime(2026, 11, 22, 10, tzinfo=timezone.utc))
+        self.assertAlmostEqual(sum(result[2].values()), 1.0, places=8)
+        self.assertEqual(set(result[2]), set(CLASSES))
 
     def test_walk_forward_uses_only_prior_samples(self):
         rows = []
