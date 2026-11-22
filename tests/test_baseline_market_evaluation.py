@@ -21,7 +21,24 @@ class BaselineMarketTests(unittest.TestCase):
 
     def test_metrics(self):
         rows = [{"outcome": "HOME", "probs": {"HOME": .7, "DRAW": .2, "AWAY": .1}}]
-        self.assertEqual(score_metrics(rows)["accuracy"], 1.0)
+        metrics = score_metrics(rows)
+        self.assertEqual(metrics["accuracy"], 1.0)
+        self.assertAlmostEqual(metrics["ece_top_label"], .3)
+        self.assertTrue(metrics["probability_vectors_valid"])
+
+    def test_metrics_reject_probability_vectors_not_summing_to_one(self):
+        rows = [{"outcome": "HOME", "probs": {"HOME": .7, "DRAW": .2, "AWAY": .2}}]
+        with self.assertRaises(ValueError):
+            score_metrics(rows)
+
+    def test_metrics_reject_non_finite_or_out_of_range_probabilities(self):
+        for probs in (
+            {"HOME": float("nan"), "DRAW": .2, "AWAY": .8},
+            {"HOME": 1.2, "DRAW": -.1, "AWAY": -.1},
+        ):
+            with self.subTest(probs=probs):
+                with self.assertRaises(ValueError):
+                    score_metrics([{"outcome": "HOME", "probs": probs}])
 
 
 if __name__ == "__main__":
