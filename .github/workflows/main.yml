@@ -110,7 +110,7 @@ jobs:
       - name: Entrainer et evaluer le modele predictif 1X2 hors periode
         run: python predictive_model_experiment.py
 
-      - name: Generer le rapport de rapprochement (lecture seule)
+      - name: Evaluer le modele independant de forme des equipes\n        run: python team_form_model_experiment.py\n\n      - name: Generer le rapport de rapprochement (lecture seule)
         run: python match_results_report.py
 
       - name: Mettre a jour le registre persistant de validation humaine
