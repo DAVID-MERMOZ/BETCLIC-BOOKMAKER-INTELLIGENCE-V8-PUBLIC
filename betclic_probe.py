@@ -7,10 +7,10 @@ import time
 from betclic_api import BetclicClient
 from database import initialize_database, save_match, save_odds
 
-MAX_WORKERS = 3
+MAX_WORKERS = 6
 MAX_PAGES = 15
 PAGE_SIZE = 40
-MAX_UPCOMING_MATCHES = 300
+MAX_UPCOMING_MATCHES = 60
 DETAIL_RETRIES = 3
 DB_PATH = "data/betclic_history.db"
 
