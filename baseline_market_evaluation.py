@@ -138,7 +138,7 @@ def build_dataset(db_path=DB_PATH):
                 continue
             _, probs = max(candidates, key=lambda x: x[0])
             outcome = "HOME" if hs > aws else "AWAY" if hs < aws else "DRAW"
-            dataset.append({"kickoff": kickoff, "outcome": outcome, "probs": probs})
+            dataset.append({"match_id": str(match_id), "kickoff": kickoff, "outcome": outcome, "probs": probs})
     dataset.sort(key=lambda x: x["kickoff"])
     return dataset, diagnostics
 
