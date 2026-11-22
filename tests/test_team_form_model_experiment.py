@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone, timedelta
 
 from team_form_model_experiment import (team_form, evaluate, fit_final_model, team_key,
-                                        latest_complete_1x2_snapshot, prediction_action_status)
+                                        latest_complete_1x2_snapshot, prediction_action_status, team_form_features)
 from baseline_market_evaluation import CLASSES
 
 
@@ -26,6 +26,38 @@ class TeamFormTests(unittest.TestCase):
         self.assertIsNotNone(form)
         self.assertEqual(form[0], 3.0)
         self.assertEqual(form[1], 2.0)
+
+    def test_venue_features_capture_home_and_away_strength_separately(self):
+        t = datetime(2026, 1, 10, tzinfo=timezone.utc)
+        history = [
+            {"date": t - timedelta(days=4), "home": team_key("alpha"),
+             "away": team_key("beta"), "hg": 2, "ag": 0},
+            {"date": t - timedelta(days=3), "home": team_key("gamma"),
+             "away": team_key("alpha"), "hg": 3, "ag": 0},
+            {"date": t - timedelta(days=2), "home": team_key("alpha"),
+             "away": team_key("delta"), "hg": 1, "ag": 0},
+            {"date": t - timedelta(days=1), "home": team_key("epsilon"),
+             "away": team_key("alpha"), "hg": 2, "ag": 0},
+        ]
+        features = team_form_features(history, "alpha", t, "HOME")
+        self.assertEqual(len(features), 8)
+        self.assertAlmostEqual(features[0], 1.5)  # points par match, forme globale
+        self.assertAlmostEqual(features[4], 3.0)  # points par match a domicile
+        self.assertAlmostEqual(features[5], 1.5)  # buts marques a domicile
+        self.assertAlmostEqual(features[6], 0.0)  # buts encaisses a domicile
+
+    def test_venue_features_fall_back_to_overall_with_less_than_two_games(self):
+        t = datetime(2026, 1, 10, tzinfo=timezone.utc)
+        history = [
+            {"date": t - timedelta(days=3), "home": team_key("alpha"),
+             "away": team_key("beta"), "hg": 2, "ag": 0},
+            {"date": t - timedelta(days=2), "home": team_key("gamma"),
+             "away": team_key("alpha"), "hg": 1, "ag": 0},
+            {"date": t - timedelta(days=1), "home": team_key("delta"),
+             "away": team_key("alpha"), "hg": 2, "ag": 1},
+        ]
+        features = team_form_features(history, "alpha", t, "HOME")
+        self.assertEqual(features[:4], features[4:])
 
     def test_upcoming_fallback_can_use_one_prior_match_but_marks_it_low_history(self):
         t = datetime(2026, 1, 10, tzinfo=timezone.utc)
