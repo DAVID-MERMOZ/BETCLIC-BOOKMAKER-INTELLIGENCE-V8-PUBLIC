@@ -26,7 +26,7 @@ class TeamFormTests(unittest.TestCase):
                     "away": "beta", "hg": 1, "ag": 0}]
         self.assertIsNone(team_form(history, "alpha", t))
 
-    def test_loocv_uses_all_fifteen_admissible_samples(self):
+    def test_walk_forward_uses_only_prior_samples(self):
         rows = []
         for i in range(15):
             outcome = CLASSES[i % 3]
@@ -42,9 +42,9 @@ class TeamFormTests(unittest.TestCase):
             })
         result = evaluate(rows, [])
         self.assertEqual(result["eligible_n"], 15)
-        self.assertEqual(result["cross_validation"]["n"], 15)
-        self.assertEqual(result["validation"], "leave_one_out")
-        self.assertEqual(result["status"], "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED")
+        self.assertEqual(result["cross_validation"]["n"], 5)
+        self.assertEqual(result["validation"], "expanding_window_chronological_70_30")
+        self.assertEqual(result["status"], "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED")
 
     def test_final_pilot_model_accepts_singleton_class_without_claiming_cv(self):
         rows = []
@@ -71,7 +71,7 @@ class TeamFormTests(unittest.TestCase):
         } for i in range(10)]
         self.assertIsNone(fit_final_model(rows))
 
-    def test_loocv_rejects_class_with_only_one_observation(self):
+    def test_walk_forward_rejects_class_missing_from_initial_training_window(self):
         rows = []
         outcomes = ["HOME"] * 7 + ["DRAW"] * 7 + ["AWAY"]
         for i, outcome in enumerate(outcomes):
@@ -82,7 +82,7 @@ class TeamFormTests(unittest.TestCase):
                 "outcome": outcome, "features": [float(i)] * 8,
             })
         self.assertEqual(evaluate(rows, [])["status"],
-                         "INSUFFICIENT_CLASS_COVERAGE_FOR_LOOCV")
+                         "INSUFFICIENT_WALK_FORWARD_PREDICTIONS")
 
 
 if __name__ == "__main__":
