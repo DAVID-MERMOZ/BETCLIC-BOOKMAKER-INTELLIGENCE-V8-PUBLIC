@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone, timedelta
 
 from team_form_model_experiment import (team_form, evaluate, fit_final_model, team_key,
-                                        latest_complete_1x2_snapshot)
+                                        latest_complete_1x2_snapshot, prediction_action_status)
 from baseline_market_evaluation import CLASSES
 
 
@@ -69,6 +69,20 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(market_comparison_status(model, market),
                          "REVIEW_LARGE_DIVERGENCE")
         self.assertEqual(market_comparison_status(model, None), "NO_MARKET")
+
+
+    def test_prediction_action_blocks_unvalidated_or_unsafe_signals(self):
+        self.assertEqual(prediction_action_status("LOW_HISTORY_EXPERIMENTAL",
+            "NO_LARGE_DIVERGENCE", "EXPERIMENTAL_NOT_VALIDATED"),
+            "NO_BET_LOW_HISTORY")
+        self.assertEqual(prediction_action_status("STANDARD_3_PLUS",
+            "REVIEW_LARGE_DIVERGENCE", "EXPERIMENTAL_NOT_VALIDATED"),
+            "NO_BET_LARGE_DIVERGENCE")
+        self.assertEqual(prediction_action_status("STANDARD_3_PLUS",
+            "NO_LARGE_DIVERGENCE", "EXPERIMENTAL_NOT_VALIDATED"),
+            "NO_BET_MODEL_UNVALIDATED")
+        self.assertEqual(prediction_action_status("STANDARD_3_PLUS",
+            "NO_LARGE_DIVERGENCE", "VALIDATED"), "ELIGIBLE_FOR_REVIEW_ONLY")
 
     def test_walk_forward_uses_only_prior_samples(self):
         rows = []
