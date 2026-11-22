@@ -287,14 +287,13 @@ def main():
     print("Diagnostic marche :", market_diag)
     result = evaluate(samples, market_rows)
     print("Evaluation :", result)
-    # L'entrainement final utilise tous les labels disponibles des trois classes,
-    # meme si la LOOCV est statistiquement impossible avec une classe singleton.
-    # Dans ce cas, le modele est marque experimental sans validation.
+    # L'entrainement final utilise tous les labels disponibles des trois classes.
+    # La validation walk-forward est distincte du statut de maturite production.
     trained = train_and_predict(samples, evaluation_status=result["status"])
-    if trained and result["status"] != "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED":
-        final_status = "PILOT_TRAINED_EXPERIMENTAL_NO_CV"
+    if trained and result["status"] == "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED":
+        final_status = "PILOT_TRAINED_EXPERIMENTAL_WALK_FORWARD_COMPLETED"
     elif trained:
-        final_status = "TEAM_FORM_PILOT_TRAINED_EXPERIMENTAL"
+        final_status = "PILOT_TRAINED_EXPERIMENTAL_VALIDATION_INSUFFICIENT"
     else:
         final_status = result["status"]
     print("Les predictions sont experimentales et non validees.")
