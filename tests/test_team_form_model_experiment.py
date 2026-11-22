@@ -26,12 +26,38 @@ class TeamFormTests(unittest.TestCase):
                     "away": "beta", "hg": 1, "ag": 0}]
         self.assertIsNone(team_form(history, "alpha", t))
 
-    def test_small_sample_rejected(self):
-        rows = [{"kickoff": datetime(2026, 1, i + 1, tzinfo=timezone.utc),
-                 "outcome": CLASSES[i % 3], "features": [0.0] * 8}
-                for i in range(10)]
+    def test_loocv_uses_all_fifteen_admissible_samples(self):
+        rows = []
+        for i in range(15):
+            outcome = CLASSES[i % 3]
+            base = float(i % 5)
+            rows.append({
+                "match_id": str(i),
+                "kickoff": datetime(2026, 1, 1, tzinfo=timezone.utc)
+                           + timedelta(days=i),
+                "outcome": outcome,
+                "features": [base, base + (outcome == "HOME"),
+                             base - (outcome == "AWAY"), base / 2,
+                             base + 0.1, base, base - 0.2, base / 3],
+            })
+        result = evaluate(rows, [])
+        self.assertEqual(result["eligible_n"], 15)
+        self.assertEqual(result["cross_validation"]["n"], 15)
+        self.assertEqual(result["validation"], "leave_one_out")
+        self.assertEqual(result["status"], "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED")
+
+    def test_loocv_rejects_class_with_only_one_observation(self):
+        rows = []
+        outcomes = ["HOME"] * 7 + ["DRAW"] * 7 + ["AWAY"]
+        for i, outcome in enumerate(outcomes):
+            rows.append({
+                "match_id": str(i),
+                "kickoff": datetime(2026, 1, 1, tzinfo=timezone.utc)
+                           + timedelta(days=i),
+                "outcome": outcome, "features": [float(i)] * 8,
+            })
         self.assertEqual(evaluate(rows, [])["status"],
-                         "INSUFFICIENT_TEAM_FORM_SAMPLE")
+                         "INSUFFICIENT_CLASS_COVERAGE_FOR_LOOCV")
 
 
 if __name__ == "__main__":
