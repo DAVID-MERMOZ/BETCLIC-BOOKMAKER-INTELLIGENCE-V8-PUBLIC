@@ -2,7 +2,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
-from model_readiness_audit import audit_model_readiness, MIN_LABELED_MATCHES
+from model_readiness_audit import audit_model_readiness, MIN_LABELED_MATCHES, MIN_PRODUCTION_MATCHES
 
 
 class ModelReadinessAuditTests(unittest.TestCase):
@@ -35,6 +35,12 @@ class ModelReadinessAuditTests(unittest.TestCase):
 
     def test_default_threshold_is_pilot_60_matches(self):
         self.assertEqual(MIN_LABELED_MATCHES, 60)
+
+    def test_production_threshold_is_separate_and_requires_200_matches(self):
+        self.assertEqual(MIN_PRODUCTION_MATCHES, 200)
+        result = audit_model_readiness(self.db, min_labeled_matches=1)
+        self.assertEqual(result["status"], "READY_FOR_BASELINE_EXPERIMENTS")
+        self.assertEqual(result["production_status"], "PRODUCTION_SAMPLE_INSUFFICIENT")
 
     def test_counts_only_pre_kickoff_prices(self):
         result = audit_model_readiness(self.db, min_labeled_matches=1)
