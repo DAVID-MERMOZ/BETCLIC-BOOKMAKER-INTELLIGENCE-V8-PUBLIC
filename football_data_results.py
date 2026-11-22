@@ -1,8 +1,10 @@
 """Collecte des scores football-data.org, sans rapprochement automatique Betclic."""
 import json
 import os
+import re
 import sqlite3
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -14,14 +16,48 @@ BASE_URL = "https://api.football-data.org/v4/matches"
 PROVIDER = "football-data.org"
 
 
-def fetch_finished_matches(token, days_back=180):
-    """Telecharge la fenetre demandee par tranches de 10 jours maximum."""
+def retry_delay_seconds(exc):
+    """Respecte Retry-After ou le delai indique dans le corps d'une reponse 429."""
+    header = exc.headers.get("Retry-After") if exc.headers else None
+    if header:
+        try:
+            return max(1.0, float(header))
+        except (TypeError, ValueError):
+            pass
+    try:
+        body = exc.read().decode("utf-8", errors="replace")
+    except Exception:
+        body = ""
+    match = re.search(r"wait\\s+(\\d+)\\s+seconds?", body, re.IGNORECASE)
+    if match:
+        return max(1.0, float(match.group(1)))
+    return 60.0
+
+
+def open_json_with_retry(request, max_retries=5):
+    """Reessaie les limites temporaires sans masquer les erreurs definitives."""
+    for attempt in range(max_retries + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt >= max_retries:
+                raise
+            delay = retry_delay_seconds(exc)
+            print(f"Limite API HTTP 429 : pause de {delay:.0f}s "
+                  f"(tentative {attempt + 1}/{max_retries})")
+            time.sleep(delay)
+
+
+def fetch_finished_matches(token, days_back=180, db_path=DB_PATH):
+    """Telecharge par tranches de 10 jours, limite le debit et sauvegarde chaque tranche."""
     today = datetime.now(timezone.utc).date()
     start_date = today - timedelta(days=days_back)
     end_date = today + timedelta(days=1)  # borne exclusive
     all_matches = {}
     cursor = start_date
     windows = 0
+    last_request_at = None
 
     while cursor < end_date:
         next_date = min(cursor + timedelta(days=10), end_date)
@@ -39,10 +75,21 @@ def fetch_finished_matches(token, days_back=180):
                 "User-Agent": "Betclic-Bookmaker-Intelligence/8.1",
             },
         )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        # Le forfait API peut limiter le nombre de requetes par minute.
+        if last_request_at is not None:
+            remaining = 7.0 - (time.monotonic() - last_request_at)
+            if remaining > 0:
+                time.sleep(remaining)
+        last_request_at = time.monotonic()
+        payload = open_json_with_retry(request)
 
-        for match in payload.get("matches", []):
+        window_matches = payload.get("matches", [])
+        # Sauvegarde immediate : une interruption ne fait pas perdre les fenetres deja lues.
+        window_saved, window_skipped = store_finished_matches(window_matches, db_path)
+        print(f"Sauvegarde intermediaire : {window_saved} resultats, "
+              f"{window_skipped} ignores")
+
+        for match in window_matches:
             # La cle API evite tout doublon si deux fenetres se chevauchent.
             match_id = match.get("id")
             if match_id is not None:
@@ -50,7 +97,7 @@ def fetch_finished_matches(token, days_back=180):
 
         windows += 1
         print(f"Fenetre {windows} : {date_from} -> {date_to} (exclusive), "
-              f"{len(payload.get('matches', []))} matchs")
+              f"{len(window_matches)} matchs")
         cursor = next_date
 
     return list(all_matches.values()), start_date.isoformat(), end_date.isoformat()
