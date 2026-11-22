@@ -53,6 +53,9 @@ jobs:
           test -s data/betclic_history.db
           python -c "import sqlite3; c=sqlite3.connect('file:data/betclic_history.db?mode=ro', uri=True); print('SQLITE:', c.execute('PRAGMA integrity_check').fetchone()[0]); print('TABLES:', c.execute(\"SELECT count(*) FROM sqlite_master WHERE type='table'\").fetchone()[0]); c.close()"
 
+      - name: Auditer la maturite des donnees historiques (lecture seule)
+        run: python model_readiness_audit.py
+
       - name: Actualiser les fixtures et cotes Betclic avant les predictions
         run: python betclic_probe.py
 
