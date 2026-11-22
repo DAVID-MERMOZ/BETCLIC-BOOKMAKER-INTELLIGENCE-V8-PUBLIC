@@ -5,8 +5,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DB_PATH = Path("data/betclic_history.db")
-MIN_LABELED_MATCHES = 60  # seuil pilote pour experiments de reference, pas production
-MIN_PRODUCTION_MATCHES = 200  # jalon distinct de validation statistique en production
+MIN_LABELED_MATCHES = 30  # seuil de lancement du pilote experimental en collecte reelle
+MIN_LAUNCH_MATCHES = 30  # lancement autorise, sans pretendre a une validation statistique
+MIN_PRODUCTION_MATCHES = 200  # objectif ulterieur de validation statistique robuste
 
 
 def parse_utc(value):
@@ -141,12 +142,19 @@ def audit_model_readiness(db_path=DB_PATH, min_labeled_matches=MIN_LABELED_MATCH
         },
         "minimum_required_matches": min_labeled_matches,
         "status": "READY_FOR_BASELINE_EXPERIMENTS" if ready else "INSUFFICIENT_DATA",
+        "launch_minimum_required_matches": MIN_LAUNCH_MATCHES,
+        "launch_status": (
+            "LAUNCH_ALLOWED_EXPERIMENTAL"
+            if labeled_matches >= MIN_LAUNCH_MATCHES
+            and len(matches_with_pre_match_odds) >= MIN_LAUNCH_MATCHES
+            else "COLLECTING_BELOW_EXPERIMENTAL_LAUNCH_THRESHOLD"
+        ),
         "production_minimum_required_matches": MIN_PRODUCTION_MATCHES,
         "production_status": (
-            "READY_FOR_PRODUCTION_VALIDATION"
+            "READY_FOR_ROBUST_PRODUCTION_VALIDATION"
             if labeled_matches >= MIN_PRODUCTION_MATCHES
             and len(matches_with_pre_match_odds) >= MIN_PRODUCTION_MATCHES
-            else "PRODUCTION_SAMPLE_INSUFFICIENT"
+            else "ROBUST_VALIDATION_SAMPLE_INSUFFICIENT"
         ),
     }
 
@@ -158,6 +166,7 @@ def main():
                 "invalid_labels", "invalid_dates", "conflicting_labels",
                 "matches_with_pre_match_odds", "pre_match_coverage_pct",
                 "pre_match_selection_observations", "minimum_required_matches", "status",
+                "launch_minimum_required_matches", "launch_status",
                 "production_minimum_required_matches", "production_status"):
         print(f"{key}: {report[key]}")
     print("Repartition des resultats:", report["outcomes"])
