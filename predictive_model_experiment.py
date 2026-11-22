@@ -9,6 +9,7 @@ import math
 from sklearn.linear_model import LogisticRegression
 
 from baseline_market_evaluation import CLASSES, build_dataset, score_metrics
+from team_form_model_experiment import build_team_dataset
 
 MIN_TRAIN = 20
 MIN_TEST = 5
@@ -72,11 +73,21 @@ def evaluate_chronological_model(rows):
     return result
 
 
+def filter_to_eligible_matches(market_rows, eligible_samples):
+    """Ne conserve que les matchs ayant assez d'historique equipe valide."""
+    eligible_ids = {row["match_id"] for row in eligible_samples}
+    return [row for row in market_rows if row.get("match_id") in eligible_ids]
+
+
 def main():
-    rows, diagnostics = build_dataset()
-    print("=== MODELE PREDICTIF EXPLORATOIRE BETCLIC 1X2 ===")
-    print("Diagnostic agrege :", diagnostics)
-    print("Observations 1X2 completes :", len(rows))
+    market_rows, diagnostics = build_dataset()
+    eligible_samples, rejected = build_team_dataset()
+    rows = filter_to_eligible_matches(market_rows, eligible_samples)
+    print("=== MODELE PREDICTIF BETCLIC 1X2 - FILTRE HISTORIQUE ===")
+    print("Diagnostic marche brut :", diagnostics)
+    print("Matchs eligibles apres controle historique :", len(eligible_samples))
+    print("Matchs exclus (raisons) :", rejected)
+    print("Observations 1X2 conservees apres filtre :", len(rows))
     result = evaluate_chronological_model(rows)
     print("Evaluation chronologique :", result)
     print("Aucun ajustement sur l'echantillon test; aucune promesse de rentabilite.")
