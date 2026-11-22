@@ -33,7 +33,7 @@ jobs:
           python-version: "3.12"
 
       - name: Installer les dependances du pilote
-        run: pip install scikit-learn
+        run: pip install scikit-learn==1.9.1 joblib==1.6.0
 
       - name: Restaurer la base privee en lecture seule
         env:
