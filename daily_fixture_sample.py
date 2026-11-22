@@ -7,7 +7,7 @@ from pathlib import Path
 import joblib
 from sklearn.linear_model import LogisticRegression
 
-from baseline_market_evaluation import CLASSES
+from baseline_market_evaluation import CLASSES, validate_probability_map
 from team_form_model_experiment import (
     DB_PATH, MODEL_PATH, build_team_dataset, build_upcoming_dataset,
     market_comparison_status, prediction_action_status,
@@ -20,7 +20,7 @@ def probabilities(model, vector):
     result = {label: 0.0 for label in CLASSES}
     for label, value in zip(model.classes_, model.predict_proba([vector])[0]):
         result[label] = float(value)
-    return result
+    return validate_probability_map(result)
 
 
 def main():
@@ -67,6 +67,9 @@ def main():
             "training_classes": str(payload.get("class_counts", dict(counts))),
             "model_status": payload.get("status", "EXPERIMENTAL"),
             "validation_status": payload.get("validation_status", "NOT_EVALUATED"),
+            "calibration_status": payload.get("calibration_status", "NOT_CALIBRATED"),
+            "probability_integrity_status": "VALID_SIMPLEX",
+            "balanced_probability_status": "CLASS_WEIGHTED_EXPERIMENTAL_NOT_CALIBRATED" if balanced else "NOT_AVAILABLE",
             "history_quality": fixture["history_quality"],
             "form_matches_home": fixture["form_matches_home"],
             "form_matches_away": fixture["form_matches_away"],
@@ -81,7 +84,7 @@ def main():
                     fixture["market_snapshot"][2] if fixture.get("market_snapshot") else None),
                 payload.get("status", "EXPERIMENTAL")),
             "feature_definition": payload.get("feature_definition", ""),
-            "note": "Predictions exploratoires; pas de calibration/rentabilite revendiquee.",
+            "note": "Predictions exploratoires; probabilites normalisees, non calibrees; la variante class_weighted est diagnostique uniquement.",
         }
         rows.append(row)
 
@@ -91,7 +94,9 @@ def main():
         "prediction_1x2", "prob_home", "prob_draw", "prob_away",
         "balanced_prediction", "balanced_prob_home", "balanced_prob_draw",
         "balanced_prob_away", "training_n", "training_classes",
-        "model_status", "validation_status", "history_quality", "form_matches_home",
+        "model_status", "validation_status", "calibration_status",
+        "probability_integrity_status", "balanced_probability_status",
+        "history_quality", "form_matches_home",
         "form_matches_away", "market_status", "max_abs_edge_pp", "comparison_status",
         "action_status", "feature_definition", "note",
     ]
