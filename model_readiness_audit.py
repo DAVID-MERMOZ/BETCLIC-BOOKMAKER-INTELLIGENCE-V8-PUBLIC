@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DB_PATH = Path("data/betclic_history.db")
-MIN_LABELED_MATCHES = 200
+MIN_LABELED_MATCHES = 60  # seuil pilote pour experiments de reference, pas production
 
 
 def parse_utc(value):
