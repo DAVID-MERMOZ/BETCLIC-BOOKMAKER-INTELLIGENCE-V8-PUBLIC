@@ -1,11 +1,17 @@
 import unittest
 from datetime import datetime, timezone, timedelta
 
-from team_form_model_experiment import team_form, evaluate, fit_final_model
+from team_form_model_experiment import team_form, evaluate, fit_final_model, team_key
 from baseline_market_evaluation import CLASSES
 
 
 class TeamFormTests(unittest.TestCase):
+
+    def test_curated_aliases_match_but_squad_categories_stay_separate(self):
+        self.assertEqual(team_key("Naples"), team_key("SSC Napoli"))
+        self.assertNotEqual(team_key("Arsenal"), team_key("Arsenal F."))
+        self.assertNotEqual(team_key("Barcelona"), team_key("Barcelona U19"))
+
     def test_form_uses_only_prior_matches(self):
         t = datetime(2026, 1, 10, tzinfo=timezone.utc)
         history = [
