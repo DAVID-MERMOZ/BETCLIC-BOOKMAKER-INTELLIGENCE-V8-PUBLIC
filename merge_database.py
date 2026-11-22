@@ -133,10 +133,38 @@ def merge_databases(remote_path):
                     fetched_at=excluded.fetched_at
             """)
 
+        # Persister les checkpoints SportScore pour que les runs horaires
+        # ne retelechargent pas les 365 jours deja collectes.
+        if table_exists(conn, "remote", "provider_collection_days"):
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS main.provider_collection_days (
+                    provider TEXT NOT NULL,
+                    utc_date TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK (status = 'COMPLETE'),
+                    fixtures_seen INTEGER NOT NULL DEFAULT 0,
+                    results_saved INTEGER NOT NULL DEFAULT 0,
+                    fetched_at TEXT NOT NULL,
+                    PRIMARY KEY (provider, utc_date)
+                )
+            """)
+            conn.execute("""
+                INSERT INTO main.provider_collection_days (
+                    provider, utc_date, status, fixtures_seen, results_saved, fetched_at
+                )
+                SELECT provider, utc_date, status, fixtures_seen, results_saved, fetched_at
+                FROM remote.provider_collection_days
+                WHERE 1
+                ON CONFLICT(provider, utc_date) DO UPDATE SET
+                    status=excluded.status,
+                    fixtures_seen=excluded.fixtures_seen,
+                    results_saved=excluded.results_saved,
+                    fetched_at=excluded.fetched_at
+            """)
+
         conn.commit()
         print("FUSION SQLITE : SUCCES")
 
-        for table in ("matches", "odds_history", "odds_alerts", "provider_results"):
+        for table in ("matches", "odds_history", "odds_alerts", "provider_results", "provider_collection_days"):
             if table_exists(conn, "main", table):
                 count = conn.execute(
                     f"SELECT COUNT(*) FROM main.{table}"
