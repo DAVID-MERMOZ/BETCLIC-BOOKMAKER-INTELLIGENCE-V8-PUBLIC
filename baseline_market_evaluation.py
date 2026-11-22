@@ -59,10 +59,53 @@ def fair_probs(prices):
     return {k: v / total for k, v in implied.items()} if total > 0 else None
 
 
+def validate_probability_map(probs, tolerance=1e-6):
+    """Refuse les vecteurs 1X2 incomplets, non finis, hors bornes ou non normalises."""
+    if not isinstance(probs, dict) or set(probs) != set(CLASSES):
+        raise ValueError("Vecteur de probabilites 1X2 incomplet ou classes inattendues.")
+    values = {}
+    for label in CLASSES:
+        try:
+            value = float(probs[label])
+        except (TypeError, ValueError):
+            raise ValueError(f"Probabilite invalide pour {label}.")
+        if not math.isfinite(value) or value < 0.0 or value > 1.0:
+            raise ValueError(f"Probabilite hors bornes pour {label}: {value}.")
+        values[label] = value
+    if abs(sum(values.values()) - 1.0) > tolerance:
+        raise ValueError("Les probabilites 1X2 ne totalisent pas 1.")
+    return values
+
+
+def expected_calibration_error(rows, bins=10):
+    """ECE top-label descriptive; ne constitue pas un recalibrage."""
+    if not rows:
+        return None
+    buckets = [[] for _ in range(bins)]
+    for row in rows:
+        probs = validate_probability_map(row["probs"])
+        label = max(CLASSES, key=probs.get)
+        confidence = probs[label]
+        index = min(bins - 1, int(confidence * bins))
+        buckets[index].append((confidence, float(label == row["outcome"])))
+    total = len(rows)
+    ece = 0.0
+    for bucket in buckets:
+        if bucket:
+            confidence_mean = sum(x[0] for x in bucket) / len(bucket)
+            accuracy_mean = sum(x[1] for x in bucket) / len(bucket)
+            ece += len(bucket) / total * abs(accuracy_mean - confidence_mean)
+    return ece
+
+
 def score_metrics(rows):
     n = len(rows)
     if not n:
         return None
+    for row in rows:
+        if row.get("outcome") not in CLASSES:
+            raise ValueError("Classe de resultat inconnue dans les metriques.")
+        validate_probability_map(row.get("probs"))
     actual = [r["outcome"] for r in rows]
     brier = sum(sum((r["probs"][k] - (r["outcome"] == k)) ** 2
                     for k in CLASSES) for r in rows) / n
@@ -73,6 +116,8 @@ def score_metrics(rows):
     counts = {k: actual.count(k) for k in CLASSES}
     return {"n": n, "brier_score": round(brier, 6),
             "log_loss": round(logloss, 6), "accuracy": round(accuracy, 6),
+            "ece_top_label": round(expected_calibration_error(rows), 6),
+            "probability_vectors_valid": True,
             "majority_class_accuracy": round(max(counts.values()) / n, 6),
             "outcomes": counts}
 
