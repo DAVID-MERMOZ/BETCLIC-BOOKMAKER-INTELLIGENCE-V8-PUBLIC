@@ -218,6 +218,17 @@ def market_comparison_status(model_probs, market_probs, threshold=0.15):
                   for label in CLASSES)
     return "REVIEW_LARGE_DIVERGENCE" if max_gap >= threshold else "NO_LARGE_DIVERGENCE"
 
+def prediction_action_status(history_quality, comparison_status, model_status):
+    """Bloque toute recommandation tant que le modele n'est pas valide."""
+    if history_quality != "STANDARD_3_PLUS":
+        return "NO_BET_LOW_HISTORY"
+    if comparison_status == "REVIEW_LARGE_DIVERGENCE":
+        return "NO_BET_LARGE_DIVERGENCE"
+    if model_status != "VALIDATED":
+        return "NO_BET_MODEL_UNVALIDATED"
+    return "ELIGIBLE_FOR_REVIEW_ONLY"
+
+
 def build_upcoming_dataset(db_path=DB_PATH):
     path = Path(db_path)
     now = datetime.now(timezone.utc)
@@ -318,7 +329,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             "form_matches_home", "form_matches_away", "history_quality",
             "market_status", "market_snapshot_utc", "market_prob_home",
             "market_prob_draw", "market_prob_away", "edge_home_pp",
-            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status"])
+            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status", "action_status"])
         writer.writeheader()
         for row in predictions:
             writer.writerow({
@@ -350,7 +361,12 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                 "max_abs_edge_pp": round(max(abs(row["probs"][c] - row["market_snapshot"][2][c])
                     for c in CLASSES) * 100, 2) if row.get("market_snapshot") else "",
                 "comparison_status": market_comparison_status(
-                    row["probs"], row["market_snapshot"][2] if row.get("market_snapshot") else None)})
+                    row["probs"], row["market_snapshot"][2] if row.get("market_snapshot") else None),
+                "action_status": prediction_action_status(
+                    row["history_quality"],
+                    market_comparison_status(row["probs"],
+                        row["market_snapshot"][2] if row.get("market_snapshot") else None),
+                    pilot_status)})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "home_then_away: points_per_game, goals_for_per_game, goals_against_per_game, goal_difference_per_game",
