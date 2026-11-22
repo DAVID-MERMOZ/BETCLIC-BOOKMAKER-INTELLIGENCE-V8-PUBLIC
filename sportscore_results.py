@@ -18,7 +18,7 @@ BASE_URL = "https://sportscore.com/api/v1/fixtures/"
 PROVIDER = "sportscore"
 
 
-def fetch_day(day, max_attempts=5):
+def fetch_day(day, max_attempts=7):
     """Retry les erreurs temporaires du fournisseur sans checkpoint incomplet."""
     query = urllib.parse.urlencode({
         "sport": "football",
