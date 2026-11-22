@@ -33,8 +33,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Installer les dependances du pilote
-        run: pip install scikit-learn==1.9.1 joblib==1.6.0
+      - name: Installer les dependances du pilote et du collecteur Betclic
+        run: |
+          pip install scikit-learn==1.9.1 joblib==1.6.0
+          pip install git+https://github.com/TapsHTS/betclic-api.git
 
       - name: Restaurer la base privee en lecture seule
         env:
@@ -50,6 +52,9 @@ jobs:
           gzip -dc /tmp/betclic-pilot/betclic_history.db.gz > data/betclic_history.db
           test -s data/betclic_history.db
           python -c "import sqlite3; c=sqlite3.connect('file:data/betclic_history.db?mode=ro', uri=True); print('SQLITE:', c.execute('PRAGMA integrity_check').fetchone()[0]); print('TABLES:', c.execute(\"SELECT count(*) FROM sqlite_master WHERE type='table'\").fetchone()[0]); c.close()"
+
+      - name: Actualiser les fixtures et cotes Betclic avant les predictions
+        run: python betclic_probe.py
 
       - name: Executer les tests
         run: python -m unittest discover -s tests -v
