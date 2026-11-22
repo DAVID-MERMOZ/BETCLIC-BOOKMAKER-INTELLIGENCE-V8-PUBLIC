@@ -10,7 +10,7 @@ import sklearn
 from sklearn.linear_model import LogisticRegression
 
 from baseline_market_evaluation import (
-    CLASSES, build_dataset, parse_utc, score_metrics,
+    CLASSES, MARKET, build_dataset, classify_selection, fair_probs, parse_utc, score_metrics, split_teams,
 )
 from match_results_report import norm as canonical_team_norm, squad_profile, split_teams
 
@@ -186,6 +186,29 @@ def evaluate(samples, market_rows):
     result["team_name_matching"] = "curated_aliases_with_squad_separation"
     return result
 
+def latest_complete_1x2_snapshot(odds_rows, match_name, cutoff):
+    """Dernier snapshot Betclic 1X2 complet avant cutoff, marge retiree."""
+    home, away = split_teams(match_name)
+    if not home or not away:
+        return None
+    snapshots = defaultdict(dict)
+    for selection, price, collected_at in odds_rows:
+        stamp = parse_utc(collected_at)
+        if stamp is None or stamp > cutoff or price is None or float(price) <= 1:
+            continue
+        outcome = classify_selection(selection, home, away)
+        if outcome is not None:
+            snapshots[stamp][outcome] = float(price)
+    complete = []
+    for stamp, prices in snapshots.items():
+        probabilities = fair_probs(prices)
+        if probabilities:
+            complete.append((stamp, prices, probabilities))
+    if not complete:
+        return None
+    return max(complete, key=lambda row: row[0])
+
+
 def build_upcoming_dataset(db_path=DB_PATH):
     path = Path(db_path)
     now = datetime.now(timezone.utc)
@@ -196,6 +219,19 @@ def build_upcoming_dataset(db_path=DB_PATH):
             FROM matches
             WHERE sport='football' AND COALESCE(is_live, 0)=0
         """).fetchall()
+        odds_by_match = defaultdict(list)
+        fixture_ids = [str(row[0]) for row in fixtures]
+        if fixture_ids:
+            placeholders = ",".join("?" for _ in fixture_ids)
+            odds_rows = conn.execute(f"""
+                SELECT match_id, selection_name, odds, collected_at
+                FROM odds_history
+                WHERE match_id IN ({placeholders})
+                  AND market_name=? AND suspended=0 AND odds>1
+                ORDER BY collected_at, id
+            """, (*fixture_ids, MARKET)).fetchall()
+            for mid, selection, price, collected_at in odds_rows:
+                odds_by_match[str(mid)].append((selection, price, collected_at))
     upcoming, rejected = [], defaultdict(int)
     for match_id, name, match_date in fixtures:
         kickoff = parse_utc(match_date)
@@ -217,11 +253,15 @@ def build_upcoming_dataset(db_path=DB_PATH):
         if hf is None or af is None:
             rejected["no_prior_match_even_with_fallback"] += 1
             continue
+        market = latest_complete_1x2_snapshot(
+            odds_by_match.get(str(match_id), []), name, now
+        )
         upcoming.append({"match_id": str(match_id), "match_name": name,
                          "kickoff": kickoff, "features": hf + af,
                          "form_matches_home": home_n, "form_matches_away": away_n,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
-                                            else "LOW_HISTORY_EXPERIMENTAL"})
+                                            else "LOW_HISTORY_EXPERIMENTAL",
+                         "market_snapshot": market})
     upcoming.sort(key=lambda r: r["kickoff"])
     return upcoming, dict(rejected)
 
@@ -266,7 +306,10 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
         writer = csv.DictWriter(f, fieldnames=[
             "match_id", "match_name", "kickoff_utc", "prediction",
             "prob_home", "prob_draw", "prob_away", "model_status",
-            "form_matches_home", "form_matches_away", "history_quality"])
+            "form_matches_home", "form_matches_away", "history_quality",
+            "market_status", "market_snapshot_utc", "market_prob_home",
+            "market_prob_draw", "market_prob_away", "edge_home_pp",
+            "edge_draw_pp", "edge_away_pp"])
         writer.writeheader()
         for row in predictions:
             writer.writerow({
@@ -279,7 +322,22 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                 "model_status": pilot_status,
                 "form_matches_home": row["form_matches_home"],
                 "form_matches_away": row["form_matches_away"],
-                "history_quality": row["history_quality"]})
+                "history_quality": row["history_quality"],
+                "market_status": "AVAILABLE" if row.get("market_snapshot") else "NO_COMPLETE_PREMATCH_1X2",
+                "market_snapshot_utc": row["market_snapshot"][0].isoformat()
+                    if row.get("market_snapshot") else "",
+                "market_prob_home": round(row["market_snapshot"][2]["HOME"], 6)
+                    if row.get("market_snapshot") else "",
+                "market_prob_draw": round(row["market_snapshot"][2]["DRAW"], 6)
+                    if row.get("market_snapshot") else "",
+                "market_prob_away": round(row["market_snapshot"][2]["AWAY"], 6)
+                    if row.get("market_snapshot") else "",
+                "edge_home_pp": round((row["probs"]["HOME"] - row["market_snapshot"][2]["HOME"]) * 100, 2)
+                    if row.get("market_snapshot") else "",
+                "edge_draw_pp": round((row["probs"]["DRAW"] - row["market_snapshot"][2]["DRAW"]) * 100, 2)
+                    if row.get("market_snapshot") else "",
+                "edge_away_pp": round((row["probs"]["AWAY"] - row["market_snapshot"][2]["AWAY"]) * 100, 2)
+                    if row.get("market_snapshot") else ""})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "home_then_away: points_per_game, goals_for_per_game, goals_against_per_game, goal_difference_per_game",
