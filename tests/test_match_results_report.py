@@ -35,6 +35,8 @@ class MatchReportTests(unittest.TestCase):
             ("Betis", "Real Betis Balompié"),
             ("UNAM Pumas", "Pumas UNAM"),
             ("Monterrey", "Rayados de Monterrey"),
+            ("Bucheon", "Bucheon FC 1995"),
+            ("Jeju United", "Jeju SK FC"),
         ]
         for short_name, canonical_name in aliases:
             with self.subTest(short_name=short_name):
