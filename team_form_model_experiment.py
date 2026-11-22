@@ -79,7 +79,17 @@ def build_team_dataset(db_path=DB_PATH):
         outcome = "HOME" if hs > aws else "AWAY" if hs < aws else "DRAW"
         samples.append({"match_id": str(match_id), "kickoff": kickoff,
                         "outcome": outcome, "features": home_form + away_form})
-    samples.sort(key=lambda r: r["kickoff"])
+    # Une seule observation par match Betclic; les doublons contradictoires sont exclus.
+    by_id = {}
+    for row in samples:
+        previous = by_id.get(row["match_id"])
+        if previous and previous["outcome"] != row["outcome"]:
+            rejected["conflicting_duplicate_label"] += 1
+            by_id.pop(row["match_id"], None)
+            continue
+        if row["match_id"] not in by_id:
+            by_id[row["match_id"]] = row
+    samples = sorted(by_id.values(), key=lambda r: r["kickoff"])
     return samples, dict(rejected)
 
 
@@ -99,19 +109,25 @@ def evaluate(samples, market_rows):
     model = LogisticRegression(C=0.1, solver="lbfgs", max_iter=2000,
                                random_state=42)
     model.fit([r["features"] for r in train], [r["outcome"] for r in train])
-    predictions = []
+    predictions_by_time = {}
     for row, vector in zip(test, model.predict_proba([r["features"] for r in test])):
         probs = {c: 0.0 for c in CLASSES}
         for label, p in zip(model.classes_, vector):
             probs[label] = float(p)
-        predictions.append({"outcome": row["outcome"], "probs": probs})
+        predictions_by_time[row["kickoff"]] = {
+            "outcome": row["outcome"], "probs": probs
+        }
 
-    market_by_time = {r["kickoff"]: r for r in market_rows}
-    comparable = [market_by_time[r["kickoff"]] for r in test
-                  if r["kickoff"] in market_by_time]
-    result["model"] = score_metrics(predictions)
-    result["market_comparable_n"] = len(comparable)
-    result["market"] = score_metrics(comparable) if comparable else None
+    # Comparaison appariée: mêmes matchs et mêmes résultats pour les deux modèles.
+    market_by_time = {}
+    for row in market_rows:
+        market_by_time[row["kickoff"]] = row
+    common_times = sorted(set(predictions_by_time) & set(market_by_time))
+    paired_model = [predictions_by_time[t] for t in common_times]
+    paired_market = [market_by_time[t] for t in common_times]
+    result["comparison_n"] = len(common_times)
+    result["model"] = score_metrics(paired_model) if paired_model else None
+    result["market"] = score_metrics(paired_market) if paired_market else None
     result["status"] = "TEAM_FORM_EXPERIMENT_COMPLETED"
     result["feature_set"] = "rolling_last_5_points_goals_for_goals_against"
     result["team_name_matching"] = "exact_normalized_only"
