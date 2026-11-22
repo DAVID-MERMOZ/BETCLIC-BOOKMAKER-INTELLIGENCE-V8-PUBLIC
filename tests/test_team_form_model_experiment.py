@@ -26,6 +26,15 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(form[0], 3.0)
         self.assertEqual(form[1], 2.0)
 
+    def test_upcoming_fallback_can_use_one_prior_match_but_marks_it_low_history(self):
+        t = datetime(2026, 1, 10, tzinfo=timezone.utc)
+        history = [{"date": t - timedelta(days=1), "home": team_key("alpha"),
+                    "away": team_key("beta"), "hg": 1, "ag": 0}]
+        self.assertIsNone(team_form(history, "alpha", t))
+        fallback = team_form(history, "alpha", t, minimum_matches=1)
+        self.assertIsNotNone(fallback)
+        self.assertEqual(fallback[0], 3.0)
+
     def test_requires_three_prior_matches(self):
         t = datetime(2026, 1, 10, tzinfo=timezone.utc)
         history = [{"date": t - timedelta(days=1), "home": "alpha",
