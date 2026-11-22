@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone, timedelta
 
-from team_form_model_experiment import team_form, evaluate
+from team_form_model_experiment import team_form, evaluate, fit_final_model
 from baseline_market_evaluation import CLASSES
 
 
@@ -45,6 +45,31 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(result["cross_validation"]["n"], 15)
         self.assertEqual(result["validation"], "leave_one_out")
         self.assertEqual(result["status"], "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED")
+
+    def test_final_pilot_model_accepts_singleton_class_without_claiming_cv(self):
+        rows = []
+        outcomes = ["HOME"] + ["DRAW"] * 9 + ["AWAY"] * 5
+        for i, outcome in enumerate(outcomes):
+            rows.append({
+                "match_id": str(i),
+                "kickoff": datetime(2026, 1, 1, tzinfo=timezone.utc)
+                           + timedelta(days=i),
+                "outcome": outcome, "features": [float(i)] * 8,
+            })
+        model = fit_final_model(rows)
+        self.assertIsNotNone(model)
+        self.assertEqual(set(model.classes_), set(CLASSES))
+        probabilities = model.predict_proba([[1.0] * 8])[0]
+        self.assertAlmostEqual(float(sum(probabilities)), 1.0, places=6)
+
+    def test_final_pilot_model_rejects_missing_class(self):
+        rows = [{
+            "match_id": str(i),
+            "kickoff": datetime(2026, 1, 1, tzinfo=timezone.utc)
+                       + timedelta(days=i),
+            "outcome": "DRAW", "features": [float(i)] * 8,
+        } for i in range(10)]
+        self.assertIsNone(fit_final_model(rows))
 
     def test_loocv_rejects_class_with_only_one_observation(self):
         rows = []
