@@ -205,7 +205,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     model = fit_final_model(samples)
     if model is None:
         print("ENTRAINEMENT FINAL NON EXECUTE : une classe est absente ou echantillon trop petit.")
-        return 0
+        return False
     counts = Counter(r["outcome"] for r in samples)
     pilot_status = ("EXPERIMENTAL_SINGLETON_CLASS_NO_CV"
                     if any(counts[c] < MIN_CLASS_COUNT_FOR_LOO for c in CLASSES)
@@ -252,7 +252,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     print("Predictions generees :", len(predictions))
     print("CSV predictions :", PREDICTIONS_PATH)
     print("Modele entraine sur l'ensemble admissible :", MODEL_PATH)
-    return 0
+    return True
 
 
 def main():
@@ -267,9 +267,16 @@ def main():
     # L'entrainement final utilise tous les labels disponibles des trois classes,
     # meme si la LOOCV est statistiquement impossible avec une classe singleton.
     # Dans ce cas, le modele est marque experimental sans validation.
-    train_and_predict(samples, evaluation_status=result["status"])
+    trained = train_and_predict(samples, evaluation_status=result["status"])
+    if trained and result["status"] != "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED":
+        final_status = "PILOT_TRAINED_EXPERIMENTAL_NO_CV"
+    elif trained:
+        final_status = "TEAM_FORM_PILOT_TRAINED_EXPERIMENTAL"
+    else:
+        final_status = result["status"]
     print("Les predictions sont experimentales et non validees.")
-    print("STATUT :", result["status"])
+    print("STATUT EVALUATION :", result["status"])
+    print("STATUT FINAL PILOTE :", final_status)
     return 0
 
 
