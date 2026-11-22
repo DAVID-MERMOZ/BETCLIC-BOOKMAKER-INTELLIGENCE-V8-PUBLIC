@@ -50,6 +50,45 @@ def team_form(history, team, kickoff, minimum_matches=MIN_PRIOR_MATCHES):
             (sum(scored) - sum(conceded)) / n]
 
 
+def _summarize_team_matches(prior, key):
+    """Resume les performances d'une equipe sur une liste de matchs deja filtres."""
+    points, scored, conceded = [], [], []
+    for row in prior:
+        is_home = row["home"] == key
+        gf = row["hg"] if is_home else row["ag"]
+        ga = row["ag"] if is_home else row["hg"]
+        scored.append(gf)
+        conceded.append(ga)
+        points.append(3 if gf > ga else 1 if gf == ga else 0)
+    n = len(prior)
+    return [sum(points) / n, sum(scored) / n, sum(conceded) / n,
+            (sum(scored) - sum(conceded)) / n]
+
+
+def team_form_features(history, team, kickoff, venue, minimum_matches=MIN_PRIOR_MATCHES):
+    """Combine forme globale et forme au lieu pertinent, sans regarder le futur.
+
+    venue='HOME' pour l'equipe qui recoit, 'AWAY' pour l'equipe visiteuse.
+    La forme au lieu est neutralisee vers la forme globale si moins de 2
+    observations pertinentes existent, afin d'eviter une statistique trop fragile.
+    """
+    key = team_key(team)
+    overall = team_form(history, team, kickoff, minimum_matches)
+    if overall is None:
+        return None
+    if venue not in ("HOME", "AWAY"):
+        raise ValueError("venue doit etre HOME ou AWAY")
+    venue_rows = [row for row in history
+                  if row["date"] < kickoff and
+                  ((venue == "HOME" and row["home"] == key) or
+                   (venue == "AWAY" and row["away"] == key))]
+    venue_rows.sort(key=lambda row: row["date"])
+    venue_rows = venue_rows[-ROLLING_N:]
+    venue_form = (_summarize_team_matches(venue_rows, key)
+                  if len(venue_rows) >= 2 else overall)
+    return overall + venue_form
+
+
 def team_prior_match_count(history, team, kickoff):
     key = team_key(team)
     return min(ROLLING_N, sum(
@@ -106,7 +145,7 @@ def build_team_dataset(db_path=DB_PATH):
             continue
         outcome = "HOME" if hs > aws else "AWAY" if hs < aws else "DRAW"
         samples.append({"match_id": str(match_id), "kickoff": kickoff,
-                        "outcome": outcome, "features": home_form + away_form})
+                        "outcome": outcome, "features": team_form_features(history, home, kickoff, "HOME") + team_form_features(history, away, kickoff, "AWAY")})
     by_id = {}
     conflicted = set()
     for row in samples:
@@ -277,7 +316,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
             odds_by_match.get(str(match_id), []), name, now
         )
         upcoming.append({"match_id": str(match_id), "match_name": name,
-                         "kickoff": kickoff, "features": hf + af,
+                         "kickoff": kickoff, "features": team_form_features(history, home, kickoff, "HOME", minimum_matches=1) +\n                                       team_form_features(history, away, kickoff, "AWAY", minimum_matches=1),
                          "form_matches_home": home_n, "form_matches_away": away_n,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
                                             else "LOW_HISTORY_EXPERIMENTAL",
@@ -369,7 +408,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                     pilot_status)})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
-                 "feature_definition": "home_then_away: points_per_game, goals_for_per_game, goals_against_per_game, goal_difference_per_game",
+                 "feature_definition": "per_team: overall_form[points,gf,ga,gd] + venue_form[points,gf,ga,gd]; venue_form falls back to overall when fewer than 2 venue matches",
                  "training_n": len(samples),
                  "trained_at_utc": datetime.now(timezone.utc).isoformat(),
                  "class_counts": dict(counts),
