@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from baseline_market_evaluation import CLASSES
 from team_form_model_experiment import (
     DB_PATH, MODEL_PATH, build_team_dataset, build_upcoming_dataset,
+    market_comparison_status, prediction_action_status,
 )
 
 OUT = Path("reports/todays_sample_predictions.csv")
@@ -66,6 +67,19 @@ def main():
             "training_classes": str(payload.get("class_counts", dict(counts))),
             "model_status": payload.get("status", "EXPERIMENTAL"),
             "validation_status": payload.get("validation_status", "NOT_EVALUATED"),
+            "history_quality": fixture["history_quality"],
+            "form_matches_home": fixture["form_matches_home"],
+            "form_matches_away": fixture["form_matches_away"],
+            "market_status": "AVAILABLE" if fixture.get("market_snapshot") else "NO_COMPLETE_PREMATCH_1X2",
+            "max_abs_edge_pp": round(max(abs(probs[label] - fixture["market_snapshot"][2][label])
+                for label in CLASSES) * 100, 2) if fixture.get("market_snapshot") else "",
+            "comparison_status": market_comparison_status(
+                probs, fixture["market_snapshot"][2] if fixture.get("market_snapshot") else None),
+            "action_status": prediction_action_status(
+                fixture["history_quality"],
+                market_comparison_status(probs,
+                    fixture["market_snapshot"][2] if fixture.get("market_snapshot") else None),
+                payload.get("status", "EXPERIMENTAL")),
             "feature_definition": payload.get("feature_definition", ""),
             "note": "Predictions exploratoires; pas de calibration/rentabilite revendiquee.",
         }
@@ -77,7 +91,7 @@ def main():
         "prediction_1x2", "prob_home", "prob_draw", "prob_away",
         "balanced_prediction", "balanced_prob_home", "balanced_prob_draw",
         "balanced_prob_away", "training_n", "training_classes",
-        "model_status", "validation_status", "feature_definition", "note",
+        "model_status", "validation_status", "history_quality", "form_matches_home",\n        "form_matches_away", "market_status", "max_abs_edge_pp", "comparison_status",\n        "action_status", "feature_definition", "note",
     ]
     with OUT.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
