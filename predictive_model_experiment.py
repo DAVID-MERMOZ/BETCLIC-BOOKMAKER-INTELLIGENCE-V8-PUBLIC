@@ -9,7 +9,6 @@ import math
 from sklearn.linear_model import LogisticRegression
 
 from baseline_market_evaluation import CLASSES, build_dataset, score_metrics
-from team_form_model_experiment import build_team_dataset
 
 MIN_TRAIN = 20
 MIN_TEST = 5
@@ -18,6 +17,35 @@ MIN_TEST = 5
 def features(rows):
     return [[math.log(max(1e-8, float(row["probs"][key]))) for key in CLASSES]
             for row in rows]
+
+
+def top_label_calibration_error(rows, bins=5):
+    """ECE descriptif sur la confiance du choix le plus probable."""
+    if not rows:
+        return None
+    buckets = [[] for _ in range(bins)]
+    for row in rows:
+        confidence = max(row["probs"].values())
+        predicted = max(row["probs"], key=row["probs"].get)
+        correct = float(predicted == row["outcome"])
+        bucket = min(bins - 1, int(confidence * bins))
+        buckets[bucket].append((confidence, correct))
+    total = len(rows)
+    error = 0.0
+    details = []
+    for index, bucket in enumerate(buckets):
+        if not bucket:
+            continue
+        mean_conf = sum(x[0] for x in bucket) / len(bucket)
+        accuracy = sum(x[1] for x in bucket) / len(bucket)
+        error += len(bucket) / total * abs(mean_conf - accuracy)
+        details.append({
+            "bin": f"{index / bins:.1f}-{(index + 1) / bins:.1f}",
+            "n": len(bucket),
+            "mean_confidence": round(mean_conf, 6),
+            "accuracy": round(accuracy, 6),
+        })
+    return {"ece": round(error, 6), "bins": details}
 
 
 def evaluate_chronological_model(rows):
@@ -59,6 +87,8 @@ def evaluate_chronological_model(rows):
         "status": "MODEL_EXPERIMENT_COMPLETED",
         "model": model_metrics,
         "market": market_metrics,
+        "model_top_label_calibration": top_label_calibration_error(model_rows),
+        "market_top_label_calibration": top_label_calibration_error(market_rows),
         "training_majority_accuracy": round(
             sum(row["outcome"] == majority for row in test) / len(test), 6
         ),
@@ -69,6 +99,7 @@ def evaluate_chronological_model(rows):
             model_metrics["brier_score"] < market_metrics["brier_score"]
         ),
         "model_type": "multinomial_logistic_recalibration_of_market_probabilities",
+        "independence": "NOT_INDEPENDENT_MARKET_DERIVED",
     })
     return result
 
@@ -81,15 +112,14 @@ def filter_to_eligible_matches(market_rows, eligible_samples):
 
 def main():
     market_rows, diagnostics = build_dataset()
-    eligible_samples, rejected = build_team_dataset()
-    rows = filter_to_eligible_matches(market_rows, eligible_samples)
-    print("=== MODELE PREDICTIF BETCLIC 1X2 - FILTRE HISTORIQUE ===")
+    rows = market_rows
+    print("=== RECALIBRAGE DU MARCHE BETCLIC 1X2 - TEST CHRONOLOGIQUE ===")
     print("Diagnostic marche brut :", diagnostics)
-    print("Matchs eligibles apres controle historique :", len(eligible_samples))
-    print("Matchs exclus (raisons) :", rejected)
-    print("Observations 1X2 conservees apres filtre :", len(rows))
+    print("Observations 1X2 completes disponibles :", len(rows))
+    print("Ce module est un benchmark derive du marche, pas le modele independant de forme.")
     result = evaluate_chronological_model(rows)
     print("Evaluation chronologique :", result)
+    print("Calibration top-label (ECE) : descriptive, prudence sur petit echantillon.")
     print("Aucun ajustement sur l'echantillon test; aucune promesse de rentabilite.")
     if result["status"] != "MODEL_EXPERIMENT_COMPLETED":
         print("STATUT :", result["status"])
