@@ -135,13 +135,15 @@ jobs:
             echo "Registre inchange : aucun commit necessaire."
           fi
 
-      - name: Publier le rapport de rapprochement
-        if: always() && hashFiles('reports/match_result_candidates.csv') != ''
+      - name: Publier les rapports et le modele experimental
+        if: always() && (hashFiles('reports/*.csv') != '' || hashFiles('artifacts/*.joblib') != '')
         uses: actions/upload-artifact@v4
         with:
-          name: betclic-result-match-candidates-${{ github.run_id }}
-          path: reports/*.csv
-          if-no-files-found: error
+          name: betclic-model-and-reports-${{ github.run_id }}
+          path: |
+            reports/*.csv
+            artifacts/*.joblib
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Publier la sauvegarde SQLite durable
