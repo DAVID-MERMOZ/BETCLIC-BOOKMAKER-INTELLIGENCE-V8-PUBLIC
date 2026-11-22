@@ -316,7 +316,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
             odds_by_match.get(str(match_id), []), name, now
         )
         upcoming.append({"match_id": str(match_id), "match_name": name,
-                         "kickoff": kickoff, "features": team_form_features(history, home, kickoff, "HOME", minimum_matches=1) +
+"kickoff": kickoff, "features": (team_form_features(history, home, kickoff, "HOME", minimum_matches=1) + team_form_features(history, away, kickoff, "AWAY", minimum_matches=1)),
                                        team_form_features(history, away, kickoff, "AWAY", minimum_matches=1),
                          "form_matches_home": home_n, "form_matches_away": away_n,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
