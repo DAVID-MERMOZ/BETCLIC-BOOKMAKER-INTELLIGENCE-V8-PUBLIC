@@ -49,7 +49,7 @@ class PredictiveModelExperimentTests(unittest.TestCase):
     def test_top_label_calibration_error_is_zero_for_perfectly_calibrated_bin(self):
         rows = [
             {"outcome": "HOME", "probs": {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.2}},
-            {"outcome": "DRAW", "probs": {"HOME": 0.2, "DRAW": 0.5, "AWAY": 0.3}},
+            {"outcome": "HOME", "probs": {"HOME": 0.2, "DRAW": 0.5, "AWAY": 0.3}},
         ]
         result = top_label_calibration_error(rows, bins=5)
         self.assertEqual(result["ece"], 0.0)
