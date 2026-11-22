@@ -6,6 +6,7 @@ from pathlib import Path
 
 DB_PATH = Path("data/betclic_history.db")
 MIN_LABELED_MATCHES = 60  # seuil pilote pour experiments de reference, pas production
+MIN_PRODUCTION_MATCHES = 200  # jalon distinct de validation statistique en production
 
 
 def parse_utc(value):
@@ -140,6 +141,13 @@ def audit_model_readiness(db_path=DB_PATH, min_labeled_matches=MIN_LABELED_MATCH
         },
         "minimum_required_matches": min_labeled_matches,
         "status": "READY_FOR_BASELINE_EXPERIMENTS" if ready else "INSUFFICIENT_DATA",
+        "production_minimum_required_matches": MIN_PRODUCTION_MATCHES,
+        "production_status": (
+            "READY_FOR_PRODUCTION_VALIDATION"
+            if labeled_matches >= MIN_PRODUCTION_MATCHES
+            and len(matches_with_pre_match_odds) >= MIN_PRODUCTION_MATCHES
+            else "PRODUCTION_SAMPLE_INSUFFICIENT"
+        ),
     }
 
 
@@ -149,7 +157,8 @@ def main():
     for key in ("confirmed_links", "unique_confirmed_matches", "labeled_matches",
                 "invalid_labels", "invalid_dates", "conflicting_labels",
                 "matches_with_pre_match_odds", "pre_match_coverage_pct",
-                "pre_match_selection_observations", "minimum_required_matches", "status"):
+                "pre_match_selection_observations", "minimum_required_matches", "status",
+                "production_minimum_required_matches", "production_status"):
         print(f"{key}: {report[key]}")
     print("Repartition des resultats:", report["outcomes"])
     print("Marches pre-match exploitables:")
