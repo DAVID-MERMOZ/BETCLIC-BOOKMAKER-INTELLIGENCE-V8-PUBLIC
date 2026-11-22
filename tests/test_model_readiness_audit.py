@@ -33,14 +33,32 @@ class ModelReadinessAuditTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_default_threshold_is_pilot_60_matches(self):
-        self.assertEqual(MIN_LABELED_MATCHES, 60)
+    def test_default_threshold_is_experimental_launch_30_matches(self):
+        self.assertEqual(MIN_LABELED_MATCHES, 30)
 
     def test_production_threshold_is_separate_and_requires_200_matches(self):
         self.assertEqual(MIN_PRODUCTION_MATCHES, 200)
+        self.assertEqual(result["launch_status"], "COLLECTING_BELOW_EXPERIMENTAL_LAUNCH_THRESHOLD")
         result = audit_model_readiness(self.db, min_labeled_matches=1)
         self.assertEqual(result["status"], "READY_FOR_BASELINE_EXPERIMENTS")
         self.assertEqual(result["production_status"], "PRODUCTION_SAMPLE_INSUFFICIENT")
+
+    def test_launch_threshold_is_30_matches_with_pre_match_odds(self):
+        with sqlite3.connect(self.db) as conn:
+            for i in range(2, 31):
+                match_id = f"m{i}"
+                conn.execute("INSERT INTO matches VALUES (?, ?)", (match_id, "2026-01-01T20:00:00Z"))
+                conn.execute("INSERT INTO validated_match_links VALUES (?, 1, 0, 'CONFIRMED')", (match_id,))
+                conn.executemany("INSERT INTO odds_history VALUES (?,'1X2',?,?,0,?)", [
+                    (match_id, "Home", 2.0, "2026-01-01T18:00:00Z"),
+                    (match_id, "Draw", 3.0, "2026-01-01T18:00:00Z"),
+                    (match_id, "Away", 4.0, "2026-01-01T18:00:00Z"),
+                ])
+        result = audit_model_readiness(self.db)
+        self.assertEqual(result["labeled_matches"], 30)
+        self.assertEqual(result["matches_with_pre_match_odds"], 30)
+        self.assertEqual(result["launch_status"], "LAUNCH_ALLOWED_EXPERIMENTAL")
+        self.assertEqual(result["production_status"], "ROBUST_VALIDATION_SAMPLE_INSUFFICIENT")
 
     def test_counts_only_pre_kickoff_prices(self):
         result = audit_model_readiness(self.db, min_labeled_matches=1)
