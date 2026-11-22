@@ -14,7 +14,7 @@ BASE_URL = "https://api.football-data.org/v4/matches"
 PROVIDER = "football-data.org"
 
 
-def fetch_finished_matches(token, days_back=30):
+def fetch_finished_matches(token, days_back=180):
     """Telecharge la fenetre demandee par tranches de 10 jours maximum."""
     today = datetime.now(timezone.utc).date()
     start_date = today - timedelta(days=days_back)
@@ -103,6 +103,7 @@ def store_finished_matches(matches, db_path=DB_PATH):
 
 def main():
     print("=== COLLECTEUR DES RESULTATS FOOTBALL-DATA ===")
+    print("Profondeur historique demandee : 180 jours")
     token = os.environ.get("FOOTBALL_DATA_API_TOKEN", "").strip()
     if not token:
         print("ERREUR : secret FOOTBALL_DATA_API_TOKEN absent.")
