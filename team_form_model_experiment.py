@@ -8,7 +8,6 @@ from pathlib import Path
 import joblib
 import sklearn
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import LeaveOneOut
 
 from baseline_market_evaluation import (
     CLASSES, build_dataset, norm, parse_utc, score_metrics, split_teams,
@@ -113,33 +112,46 @@ def make_model():
 
 
 def evaluate(samples, market_rows):
-    """LOOCV utilise chaque observation admissible au test une fois."""
+    """Validation walk-forward: chaque prediction utilise uniquement le passe."""
     samples = sorted(samples, key=lambda r: r["kickoff"])
     counts = Counter(r["outcome"] for r in samples)
     result = {"eligible_n": len(samples), "class_counts": dict(counts),
-              "validation": "leave_one_out"}
-    if len(samples) < 6 or any(counts[c] < MIN_CLASS_COUNT_FOR_LOO for c in CLASSES):
-        result["status"] = "INSUFFICIENT_CLASS_COVERAGE_FOR_LOOCV"
+              "validation": "expanding_window_chronological_70_30"}
+    if len(samples) < 12:
+        result["status"] = "INSUFFICIENT_SAMPLE_FOR_WALK_FORWARD"
         return result
 
-    X = [r["features"] for r in samples]
-    y = [r["outcome"] for r in samples]
-    oof_rows = [None] * len(samples)
-    for train_idx, test_idx in LeaveOneOut().split(X):
+    cut = max(6, int(len(samples) * 0.70))
+    predictions = []
+    for index in range(cut, len(samples)):
+        train = samples[:index]
+        train_counts = Counter(row["outcome"] for row in train)
+        if any(train_counts[label] == 0 for label in CLASSES):
+            continue
         model = make_model()
-        model.fit([X[i] for i in train_idx], [y[i] for i in train_idx])
-        i = int(test_idx[0])
-        vector = model.predict_proba([X[i]])[0]
-        probs = {c: 0.0 for c in CLASSES}
-        for label, p in zip(model.classes_, vector):
-            probs[label] = float(p)
-        oof_rows[i] = {"outcome": y[i], "probs": probs}
+        model.fit([row["features"] for row in train],
+                  [row["outcome"] for row in train])
+        current = samples[index]
+        vector = model.predict_proba([current["features"]])[0]
+        probs = {label: 0.0 for label in CLASSES}
+        for label, value in zip(model.classes_, vector):
+            probs[label] = float(value)
+        predictions.append({"match_id": current["match_id"],
+                            "outcome": current["outcome"], "probs": probs,
+                            "kickoff": current["kickoff"],
+                            "train_n": len(train)})
 
-    result["cross_validation"] = score_metrics(oof_rows)
-    market_by_id = {str(r["match_id"]): r for r in market_rows}
+    result["initial_train_n"] = cut
+    result["walk_forward_predictions_n"] = len(predictions)
+    if len(predictions) < 5:
+        result["status"] = "INSUFFICIENT_WALK_FORWARD_PREDICTIONS"
+        return result
+
+    result["cross_validation"] = score_metrics(predictions)
+    market_by_id = {str(row["match_id"]): row for row in market_rows}
     paired_model, paired_market = [], []
-    for sample, prediction in zip(samples, oof_rows):
-        market = market_by_id.get(sample["match_id"])
+    for prediction in predictions:
+        market = market_by_id.get(prediction["match_id"])
         if market:
             paired_model.append(prediction)
             paired_market.append({"outcome": market["outcome"],
@@ -152,11 +164,10 @@ def evaluate(samples, market_rows):
             result["model_paired"]["log_loss"] < result["market_paired"]["log_loss"])
         result["better_brier_than_market"] = (
             result["model_paired"]["brier_score"] < result["market_paired"]["brier_score"])
-    result["status"] = "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED"
+    result["status"] = "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
     result["feature_set"] = "rolling_last_5_points_goals_for_goals_against"
     result["team_name_matching"] = "exact_normalized_only"
     return result
-
 
 def build_upcoming_dataset(db_path=DB_PATH):
     path = Path(db_path)
