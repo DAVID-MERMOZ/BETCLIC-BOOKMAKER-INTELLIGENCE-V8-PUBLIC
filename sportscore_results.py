@@ -104,7 +104,7 @@ def normalize(match, day):
     )
 
 
-def collect(days_back=90):
+def collect(days_back=180):
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=days_back)
     rows, api_count, rejected = {}, 0, 0
@@ -163,7 +163,7 @@ def main():
         print(f"ERREUR SportScore : {type(exc).__name__}: {exc}")
         return 1
     print("FOURNISSEUR : SportScore")
-    print("Profondeur historique demandee : 90 jours")
+    print("Profondeur historique demandee : 180 jours")
     print(f"Fenetre UTC : {start} -> {end}")
     print("Appels API :", calls)
     print("Resultats uniques enregistres :", len(rows))
