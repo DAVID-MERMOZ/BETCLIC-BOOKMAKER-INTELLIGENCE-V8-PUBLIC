@@ -25,6 +25,29 @@ class SportScoreParsingTests(unittest.TestCase):
 
 
 class SportScoreCheckpointTests(unittest.TestCase):
+    def test_provider_failure_is_partial_and_does_not_checkpoint_day(self):
+        with tempfile.TemporaryDirectory() as directory:
+            db = Path(directory) / "history.db"
+            with sqlite3.connect(db) as conn:
+                conn.execute("""
+                    CREATE TABLE provider_results (
+                        provider TEXT NOT NULL, provider_match_id TEXT NOT NULL,
+                        competition_code TEXT, competition_name TEXT, utc_date TEXT,
+                        status TEXT NOT NULL, home_team TEXT NOT NULL, away_team TEXT NOT NULL,
+                        home_score INTEGER, away_score INTEGER, score_json TEXT, fetched_at TEXT NOT NULL,
+                        PRIMARY KEY (provider, provider_match_id)
+                    )
+                """)
+            with patch("sportscore_results.fetch_day", side_effect=RuntimeError("HTTP 503")):
+                result = collect(days_back=0, db_path=db)
+            self.assertEqual(result[1], 0)
+            self.assertEqual(len(result[6]), 1)
+            with sqlite3.connect(db) as conn:
+                checkpoint_count = conn.execute(
+                    "SELECT COUNT(*) FROM provider_collection_days"
+                ).fetchone()[0]
+            self.assertEqual(checkpoint_count, 0)
+
     def test_completed_day_is_skipped_on_next_collection(self):
         with tempfile.TemporaryDirectory() as directory:
             db = Path(directory) / "history.db"
