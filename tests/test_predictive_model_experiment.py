@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from predictive_model_experiment import evaluate_chronological_model
+from predictive_model_experiment import evaluate_chronological_model, filter_to_eligible_matches
 
 
 class PredictiveModelExperimentTests(unittest.TestCase):
@@ -33,6 +33,17 @@ class PredictiveModelExperimentTests(unittest.TestCase):
     def test_small_sample_is_rejected(self):
         result = evaluate_chronological_model(self.make_rows(12))
         self.assertEqual(result["status"], "INSUFFICIENT_TRAIN_OR_TEST_SAMPLE")
+
+    def test_matches_without_sufficient_history_are_excluded(self):
+        market = [
+            {"match_id": "valid", "outcome": "HOME"},
+            {"match_id": "invalid", "outcome": "AWAY"},
+        ]
+        eligible = [{"match_id": "valid"}]
+        self.assertEqual(
+            [r["match_id"] for r in filter_to_eligible_matches(market, eligible)],
+            ["valid"],
+        )
 
     def test_missing_training_class_is_rejected(self):
         rows = self.make_rows(30)
