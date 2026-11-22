@@ -101,6 +101,9 @@ jobs:
       - name: Auditer les donnees disponibles pour le modele (lecture seule)
         run: python model_readiness_audit.py
 
+      - name: Evaluer le benchmark historique du marche 1X2 (lecture seule)
+        run: python baseline_market_evaluation.py
+
       - name: Generer le rapport de rapprochement (lecture seule)
         run: python match_results_report.py
 
