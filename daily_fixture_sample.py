@@ -46,7 +46,7 @@ ALIASES = {
 }
 
 def form(history, club, kickoff):
-    names = {norm(x) for x in ALIASES[club]}
+    names = {norm(x) for x in ALIASES[norm(club)]}
     rows = [r for r in history if r["date"] < kickoff and
             (r["home"] in names or r["away"] in names)]
     rows.sort(key=lambda x: x["date"])
