@@ -116,6 +116,26 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(prediction_action_status("STANDARD_3_PLUS",
             "NO_LARGE_DIVERGENCE", "VALIDATED"), "ELIGIBLE_FOR_REVIEW_ONLY")
 
+    def test_daily_probability_export_validates_simplex(self):
+        from daily_fixture_sample import probabilities
+
+        class FakeModel:
+            classes_ = ["HOME", "DRAW", "AWAY"]
+            def predict_proba(self, vectors):
+                return [[0.2, 0.3, 0.5]]
+
+        result = probabilities(FakeModel(), [0.0] * 16)
+        self.assertAlmostEqual(sum(result.values()), 1.0)
+        self.assertEqual(result["AWAY"], 0.5)
+
+        class InvalidModel:
+            classes_ = ["HOME", "DRAW", "AWAY"]
+            def predict_proba(self, vectors):
+                return [[0.2, 0.3, 0.6]]
+
+        with self.assertRaises(ValueError):
+            probabilities(InvalidModel(), [0.0] * 16)
+
     def test_model_probability_maps_are_normalized_and_fail_closed(self):
         from baseline_market_evaluation import validate_probability_map
         valid = validate_probability_map({"HOME": .2, "DRAW": .3, "AWAY": .5})
