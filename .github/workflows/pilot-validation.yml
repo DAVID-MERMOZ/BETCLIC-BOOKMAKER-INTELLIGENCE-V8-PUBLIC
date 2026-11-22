@@ -62,7 +62,7 @@ jobs:
         with:
           name: betclic-pilot-model-${{ github.run_id }}
           path: |
-            reports/*.csv
-            artifacts/*.joblib
+            reports/team_form_predictions.csv
+            artifacts/team_form_model.joblib
           if-no-files-found: warn
           retention-days: 30
