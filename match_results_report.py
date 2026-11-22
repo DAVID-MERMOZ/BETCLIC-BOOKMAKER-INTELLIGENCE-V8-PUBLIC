@@ -90,6 +90,9 @@ TEAM_ALIASES = {
     "unam pumas": "pumas unam",
     "monterrey": "rayados de monterrey",
     "pumas u n a m": "pumas unam",
+    # Variantes K League 1 confirmees par les identifiants/noms officiels du 22/11/2026.
+    "bucheon": "bucheon 1995",
+    "jeju united": "jeju sk",
 }
 MAX_DATE_DELTA_HOURS = 12
 
