@@ -175,7 +175,7 @@ def evaluate(samples, market_rows):
             result["model_paired"]["brier_score"] < result["market_paired"]["brier_score"])
     result["status"] = "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
     result["feature_set"] = "rolling_last_5_points_goals_for_goals_against"
-    result["team_name_matching"] = "exact_normalized_only"
+    result["team_name_matching"] = "curated_aliases_with_squad_separation"
     return result
 
 def build_upcoming_dataset(db_path=DB_PATH):
