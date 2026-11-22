@@ -38,6 +38,9 @@ jobs:
       - name: Installer la bibliotheque Betclic
         run: pip install git+https://github.com/TapsHTS/betclic-api.git
 
+      - name: Installer les dependances du modele exploratoire
+        run: pip install scikit-learn
+
       - name: Tester la selection des matchs pre-match
         run: python -m unittest discover -s tests -v
 
@@ -103,6 +106,9 @@ jobs:
 
       - name: Evaluer le benchmark historique du marche 1X2 (lecture seule)
         run: python baseline_market_evaluation.py
+
+      - name: Entrainer et evaluer le modele predictif 1X2 hors periode
+        run: python predictive_model_experiment.py
 
       - name: Generer le rapport de rapprochement (lecture seule)
         run: python match_results_report.py
