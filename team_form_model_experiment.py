@@ -209,6 +209,15 @@ def latest_complete_1x2_snapshot(odds_rows, match_name, cutoff):
     return max(complete, key=lambda row: row[0])
 
 
+
+def market_comparison_status(model_probs, market_probs, threshold=0.15):
+    """Classe les grands ecarts comme anomalies a examiner, jamais comme value bets."""
+    if not market_probs:
+        return "NO_MARKET"
+    max_gap = max(abs(float(model_probs[label]) - float(market_probs[label]))
+                  for label in CLASSES)
+    return "REVIEW_LARGE_DIVERGENCE" if max_gap >= threshold else "NO_LARGE_DIVERGENCE"
+
 def build_upcoming_dataset(db_path=DB_PATH):
     path = Path(db_path)
     now = datetime.now(timezone.utc)
@@ -309,7 +318,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             "form_matches_home", "form_matches_away", "history_quality",
             "market_status", "market_snapshot_utc", "market_prob_home",
             "market_prob_draw", "market_prob_away", "edge_home_pp",
-            "edge_draw_pp", "edge_away_pp"])
+            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status"])
         writer.writeheader()
         for row in predictions:
             writer.writerow({
@@ -337,7 +346,11 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                 "edge_draw_pp": round((row["probs"]["DRAW"] - row["market_snapshot"][2]["DRAW"]) * 100, 2)
                     if row.get("market_snapshot") else "",
                 "edge_away_pp": round((row["probs"]["AWAY"] - row["market_snapshot"][2]["AWAY"]) * 100, 2)
-                    if row.get("market_snapshot") else ""})
+                    if row.get("market_snapshot") else "",
+                "max_abs_edge_pp": round(max(abs(row["probs"][c] - row["market_snapshot"][2][c])
+                    for c in CLASSES) * 100, 2) if row.get("market_snapshot") else "",
+                "comparison_status": market_comparison_status(
+                    row["probs"], row["market_snapshot"][2] if row.get("market_snapshot") else None)})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "home_then_away: points_per_game, goals_for_per_game, goals_against_per_game, goal_difference_per_game",
