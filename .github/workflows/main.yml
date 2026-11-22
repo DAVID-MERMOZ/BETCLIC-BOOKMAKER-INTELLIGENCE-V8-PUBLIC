@@ -1,0 +1,154 @@
+name: BETCLIC V8.1 - Public runner, private data
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "data/betclic_history.db"
+
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 * * * *"
+
+concurrency:
+  group: betclic-collector
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Recuperer le projet
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer la bibliotheque Betclic
+        run: pip install git+https://github.com/TapsHTS/betclic-api.git
+
+      - name: Tester la selection des matchs pre-match
+        run: python -m unittest discover -s tests -v
+
+      - name: Initialiser le schema SQLite (sans effacer les donnees)
+        run: python database.py
+
+      - name: Verifier les secrets requis pour la base privee
+        env:
+          PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          FOOTBALL_DATA_API_TOKEN: ${{ secrets.FOOTBALL_DATA_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$PRIVATE_REPO_TOKEN" || { echo "Secret PRIVATE_REPO_TOKEN manquant"; exit 1; }
+          test -n "$FOOTBALL_DATA_API_TOKEN" || { echo "Secret FOOTBALL_DATA_API_TOKEN manquant"; exit 1; }
+
+      - name: Restaurer la derniere sauvegarde durable (si disponible)
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view betclic-db-latest --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 >/dev/null 2>&1; then
+            echo "Sauvegarde durable trouvee : restauration en cours."
+            gh release download betclic-db-latest \
+              --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 \
+              --pattern "betclic_history.db.gz" \
+              --dir /tmp
+            gzip -dc /tmp/betclic_history.db.gz > /tmp/betclic_remote.db
+            python merge_database.py /tmp/betclic_remote.db
+            rm -f /tmp/betclic_remote.db /tmp/betclic_history.db.gz
+          else
+            echo "ERREUR : sauvegarde privee introuvable ; arret pour proteger l'historique." 
+            exit 1
+          fi
+
+      - name: Verifier la couverture Football-Data (lecture seule)
+        env:
+          FOOTBALL_DATA_API_TOKEN: ${{ secrets.FOOTBALL_DATA_API_TOKEN }}
+        run: python football_data_probe.py
+
+      - name: Collecter les resultats termines Football-Data
+        env:
+          FOOTBALL_DATA_API_TOKEN: ${{ secrets.FOOTBALL_DATA_API_TOKEN }}
+        run: python football_data_results.py
+
+      - name: Collecter les resultats SportScore (football, lecture par date)
+        run: python sportscore_results.py
+
+      - name: Corriger les scores valides et exporter les correspondances confirmees
+        run: python apply_validated_results.py
+
+      - name: Executer la collecte Betclic
+        timeout-minutes: 15
+        run: python betclic_probe.py
+
+      - name: Analyser les cotes
+        run: python odds_analysis.py
+
+      - name: Verifier integrite et contenu SQLite (lecture seule)
+        run: python database_diagnostic.py
+
+      - name: Auditer les donnees disponibles pour le modele (lecture seule)
+        run: python model_readiness_audit.py
+
+      - name: Generer le rapport de rapprochement (lecture seule)
+        run: python match_results_report.py
+
+      - name: Mettre a jour le registre persistant de validation humaine
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Synchroniser AVANT de regenerer le CSV pour eviter un conflit
+          # entre une copie de registre ancienne et les validations recentes.
+          git pull --rebase origin main
+          python match_validation_registry.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/match_validation_registry.csv
+          if ! git diff --cached --quiet; then
+            git commit -m "Mettre a jour le registre de validation Betclic"
+            git push
+          else
+            echo "Registre inchange : aucun commit necessaire."
+          fi
+
+      - name: Publier le rapport de rapprochement
+        if: always() && hashFiles('reports/match_result_candidates.csv') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: betclic-result-match-candidates-${{ github.run_id }}
+          path: reports/*.csv
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publier la sauvegarde SQLite durable
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -s data/betclic_history.db
+          mkdir -p /tmp/betclic-backup
+          gzip -1 -c data/betclic_history.db > /tmp/betclic-backup/betclic_history.db.gz
+          if ! gh release view betclic-db-latest --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 >/dev/null 2>&1; then
+            gh release create betclic-db-latest \
+              --title "Betclic database - latest durable snapshot" \
+              --notes "Sauvegarde SQLite automatisee. Asset remplace a chaque collecte reussie." \
+              --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8
+          fi
+          gh release upload betclic-db-latest \
+            /tmp/betclic-backup/betclic_history.db.gz \
+            --clobber \
+            --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8
+          echo "SAUVEGARDE DURABLE PUBLIEE"
+          ls -lh /tmp/betclic-backup/betclic_history.db.gz
