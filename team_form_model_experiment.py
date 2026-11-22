@@ -1,4 +1,4 @@
-"""Modele de forme des equipes: validation leave-one-out et predictions futures."""
+"""Modele de forme des equipes: validation chronologique walk-forward."""
 import csv
 import sqlite3
 from collections import Counter, defaultdict
@@ -211,7 +211,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
 
 def fit_final_model(samples):
     """Entrainement pilote permis avec >=1 observation par classe.
-    La validation croisee reste bloquee si une classe est singleton.
+    La validation walk-forward reste bloquee si les classes ne sont pas disponibles dans le passe.
     """
     counts = Counter(r["outcome"] for r in samples)
     if len(samples) < 6 or any(counts[c] < 1 for c in CLASSES):
