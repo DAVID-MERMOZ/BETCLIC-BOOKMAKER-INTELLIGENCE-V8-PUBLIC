@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from predictive_model_experiment import evaluate_chronological_model, filter_to_eligible_matches
+from predictive_model_experiment import evaluate_chronological_model, filter_to_eligible_matches, top_label_calibration_error
 
 
 class PredictiveModelExperimentTests(unittest.TestCase):
@@ -44,6 +44,16 @@ class PredictiveModelExperimentTests(unittest.TestCase):
             [r["match_id"] for r in filter_to_eligible_matches(market, eligible)],
             ["valid"],
         )
+
+
+    def test_top_label_calibration_error_is_zero_for_perfectly_calibrated_bin(self):
+        rows = [
+            {"outcome": "HOME", "probs": {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.2}},
+            {"outcome": "DRAW", "probs": {"HOME": 0.2, "DRAW": 0.5, "AWAY": 0.3}},
+        ]
+        result = top_label_calibration_error(rows, bins=5)
+        self.assertEqual(result["ece"], 0.0)
+        self.assertEqual(sum(item["n"] for item in result["bins"]), 2)
 
     def test_missing_training_class_is_rejected(self):
         rows = self.make_rows(30)
