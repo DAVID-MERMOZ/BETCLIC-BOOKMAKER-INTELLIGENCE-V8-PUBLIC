@@ -28,7 +28,7 @@ def retry_delay_seconds(exc):
         body = exc.read().decode("utf-8", errors="replace")
     except Exception:
         body = ""
-    match = re.search(r"wait\\s+(\\d+)\\s+seconds?", body, re.IGNORECASE)
+    match = re.search(r"wait\s+(\d+)\s+seconds?", body, re.IGNORECASE)
     if match:
         return max(1.0, float(match.group(1)))
     return 60.0
