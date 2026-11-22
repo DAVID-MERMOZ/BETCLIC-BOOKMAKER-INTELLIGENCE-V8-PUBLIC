@@ -142,10 +142,9 @@ with tab2:
 with tab3:
     st.subheader("Modèle de forme des équipes")
     st.warning(
-        "Pilote expérimental uniquement. Les 15 observations admissibles sont "
-        "utilisées pour l'entraînement, mais une classe ne compte qu'un seul "
-        "exemple : la validation croisée et toute revendication de performance "
-        "restent bloquées."
+        "Pilote expérimental uniquement. Consultez les champs model_status et "
+        "validation_status des prédictions : aucun niveau de performance ou de "
+        "rentabilité n'est validé sans échantillon chronologique suffisant."
     )
     if PREDICTIONS_PATH.is_file():
         predictions = pd.read_csv(PREDICTIONS_PATH)
