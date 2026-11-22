@@ -10,8 +10,16 @@ import sklearn
 from sklearn.linear_model import LogisticRegression
 
 from baseline_market_evaluation import (
-    CLASSES, build_dataset, norm, parse_utc, score_metrics, split_teams,
+    CLASSES, build_dataset, parse_utc, score_metrics,
 )
+from match_results_report import norm as canonical_team_norm, squad_profile, split_teams
+
+
+def team_key(name):
+    """Normalisation canonique avec séparation stricte des équipes F/jeunes/réserve."""
+    profile = ",".join(sorted(squad_profile(name)))
+    return canonical_team_norm(name) + "|" + profile
+
 
 DB_PATH = Path("data/betclic_history.db")
 PREDICTIONS_PATH = Path("reports/team_form_predictions.csv")
@@ -23,14 +31,14 @@ MIN_CLASS_COUNT_FOR_LOO = 2
 
 def team_form(history, team, kickoff):
     prior = [r for r in history if r["date"] < kickoff and
-             (r["home"] == team or r["away"] == team)]
+             (r["home"] == team_key(team) or r["away"] == team_key(team))]
     prior.sort(key=lambda r: r["date"])
     prior = prior[-ROLLING_N:]
     if len(prior) < MIN_PRIOR_MATCHES:
         return None
     points, scored, conceded = [], [], []
     for r in prior:
-        is_home = r["home"] == team
+        is_home = r["home"] == team_key(team)
         gf = r["hg"] if is_home else r["ag"]
         ga = r["ag"] if is_home else r["hg"]
         scored.append(gf)
@@ -53,7 +61,7 @@ def load_history(conn):
         stamp = parse_utc(date)
         if stamp is None or not home or not away:
             continue
-        history.append({"date": stamp, "home": norm(home), "away": norm(away),
+        history.append({"date": stamp, "home": team_key(home), "away": team_key(away),
                         "hg": int(hg), "ag": int(ag)})
     history.sort(key=lambda r: r["date"])
     return history
