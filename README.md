@@ -24,9 +24,9 @@ La base privée doit être disponible localement dans `data/betclic_history.db`.
 
 ## Pilote prédictif
 
-Le pilote de forme utilise les 15 matchs admissibles disponibles et les caractéristiques de forme calculées uniquement à partir de matchs antérieurs au coup d'envoi. L'entraînement final est autorisé dès lors que les trois classes (domicile, nul, extérieur) sont représentées. Une classe singleton autorise un entraînement exploratoire, mais interdit la validation croisée : le modèle et ses sorties restent marqués expérimentaux/non validés.
+Le pilote de forme utilise les 15 matchs admissibles disponibles et les caractéristiques de forme calculées uniquement à partir de matchs antérieurs au coup d'envoi. L'entraînement final est autorisé dès lors que les trois classes (domicile, nul, extérieur) sont représentées. Une classe singleton autorise un entraînement exploratoire, mais bloque la validation walk-forward tant que les trois classes ne sont pas présentes dans la fenêtre d'entraînement initiale : le modèle et ses sorties restent marqués expérimentaux/non validés.
 
-Aucune performance, rentabilité ou calibration n'est revendiquée sur cet échantillon. Le système ne déclenche aucun pari automatique. Les prédictions sont produites uniquement pour les affiches futures qui disposent de l'historique d'équipe requis.
+L'évaluation utilise une fenêtre chronologique expanding-window (70 % initiaux, puis prédictions séquentielles sur le futur) : chaque prédiction ne voit que les observations antérieures. Aucune performance, rentabilité ou calibration n'est revendiquée avant un échantillon de test suffisant. Le système ne déclenche aucun pari automatique. Les prédictions sont produites uniquement pour les affiches futures qui disposent de l'historique d'équipe requis.
 
 ## Seuil de maturité
 
