@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
+import sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import LeaveOneOut
 
@@ -245,6 +246,8 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                  "training_n": len(samples),
                  "trained_at_utc": datetime.now(timezone.utc).isoformat(),
                  "class_counts": dict(counts),
+                 "sklearn_version": sklearn.__version__,
+                 "joblib_version": joblib.__version__,
                  "validation_status": evaluation_status or "NOT_EVALUATED",
                  "status": pilot_status}, MODEL_PATH)
     print("Matchs futurs avec historique suffisant :", len(upcoming))
