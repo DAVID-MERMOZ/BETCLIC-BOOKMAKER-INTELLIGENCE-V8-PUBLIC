@@ -6,7 +6,7 @@ Moteur de collecte et d'analyse des cotes Betclic, conservation privée de l'his
 
 - Dépôt public : code source et workflow uniquement.
 - Dépôt privé `DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8` : base SQLite et sauvegarde durable.
-- GitHub Actions : exécution horaire à la minute 30 UTC.
+- GitHub Actions : collecte complète horaire à la minute 30 UTC.\n- Workflow pilote séparé : tests et entraînement depuis la dernière sauvegarde privée, sans relancer la collecte Betclic.
 - Secrets requis dans les Actions du runner public : `PRIVATE_REPO_TOKEN` et `FOOTBALL_DATA_API_TOKEN`.
 - Ne jamais ajouter la base SQLite, les historiques bruts ou les secrets au dépôt public.
 
