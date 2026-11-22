@@ -189,13 +189,31 @@ def build_upcoming_dataset(db_path=DB_PATH):
     return upcoming, dict(rejected)
 
 
-def train_and_predict(samples, db_path=DB_PATH):
+def fit_final_model(samples):
+    """Entrainement pilote permis avec >=1 observation par classe.
+    La validation croisee reste bloquee si une classe est singleton.
+    """
     counts = Counter(r["outcome"] for r in samples)
-    if len(samples) < 6 or any(counts[c] < MIN_CLASS_COUNT_FOR_LOO for c in CLASSES):
-        print("ENTRAINEMENT FINAL NON EXECUTE : couverture des classes insuffisante.")
-        return 0
+    if len(samples) < 6 or any(counts[c] < 1 for c in CLASSES):
+        return None
     model = make_model()
     model.fit([r["features"] for r in samples], [r["outcome"] for r in samples])
+    return model
+
+
+def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
+    model = fit_final_model(samples)
+    if model is None:
+        print("ENTRAINEMENT FINAL NON EXECUTE : une classe est absente ou echantillon trop petit.")
+        return 0
+    counts = Counter(r["outcome"] for r in samples)
+    pilot_status = ("EXPERIMENTAL_SINGLETON_CLASS_NO_CV"
+                    if any(counts[c] < MIN_CLASS_COUNT_FOR_LOO for c in CLASSES)
+                    else "EXPERIMENTAL_NOT_VALIDATED")
+    print("ENTRAINEMENT PILOTE : utilise les", len(samples), "matchs admissibles.")
+    print("Couverture des classes :", dict(counts))
+    print("Validation croisee :", evaluation_status or "non executee")
+    print("Statut du modele :", pilot_status)
     upcoming, rejected = build_upcoming_dataset(db_path)
     predictions = []
     if upcoming:
@@ -220,13 +238,15 @@ def train_and_predict(samples, db_path=DB_PATH):
                 "prob_home": round(row["probs"]["HOME"], 6),
                 "prob_draw": round(row["probs"]["DRAW"], 6),
                 "prob_away": round(row["probs"]["AWAY"], 6),
-                "model_status": "EXPERIMENTAL_NOT_VALIDATED"})
+                "model_status": pilot_status})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "home_then_away: points_per_game, goals_for_per_game, goals_against_per_game, goal_difference_per_game",
                  "training_n": len(samples),
                  "trained_at_utc": datetime.now(timezone.utc).isoformat(),
-                 "status": "EXPERIMENTAL_NOT_VALIDATED"}, MODEL_PATH)
+                 "class_counts": dict(counts),
+                 "validation_status": evaluation_status or "NOT_EVALUATED",
+                 "status": pilot_status}, MODEL_PATH)
     print("Matchs futurs avec historique suffisant :", len(upcoming))
     print("Matchs futurs exclus :", rejected)
     print("Predictions generees :", len(predictions))
@@ -244,10 +264,10 @@ def main():
     print("Diagnostic marche :", market_diag)
     result = evaluate(samples, market_rows)
     print("Evaluation :", result)
-    if result["status"] == "TEAM_FORM_LOOCV_EXPERIMENT_COMPLETED":
-        train_and_predict(samples)
-    else:
-        print("Predictions futures non generees : couverture des classes insuffisante.")
+    # L'entrainement final utilise tous les labels disponibles des trois classes,
+    # meme si la LOOCV est statistiquement impossible avec une classe singleton.
+    # Dans ce cas, le modele est marque experimental sans validation.
+    train_and_predict(samples, evaluation_status=result["status"])
     print("Les predictions sont experimentales et non validees.")
     print("STATUT :", result["status"])
     return 0
