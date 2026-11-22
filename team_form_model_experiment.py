@@ -29,13 +29,13 @@ MIN_PRIOR_MATCHES = 3
 MIN_CLASS_COUNT_FOR_LOO = 2
 
 
-def team_form(history, team, kickoff):
+def team_form(history, team, kickoff, minimum_matches=MIN_PRIOR_MATCHES):
     key = team_key(team)
     prior = [r for r in history if r["date"] < kickoff and
              (r["home"] == key or r["away"] == key)]
     prior.sort(key=lambda r: r["date"])
     prior = prior[-ROLLING_N:]
-    if len(prior) < MIN_PRIOR_MATCHES:
+    if len(prior) < minimum_matches:
         return None
     points, scored, conceded = [], [], []
     for r in prior:
@@ -48,6 +48,14 @@ def team_form(history, team, kickoff):
     n = len(prior)
     return [sum(points) / n, sum(scored) / n, sum(conceded) / n,
             (sum(scored) - sum(conceded)) / n]
+
+
+def team_prior_match_count(history, team, kickoff):
+    key = team_key(team)
+    return min(ROLLING_N, sum(
+        1 for row in history
+        if row["date"] < kickoff and (row["home"] == key or row["away"] == key)
+    ))
 
 
 def load_history(conn):
@@ -200,12 +208,20 @@ def build_upcoming_dataset(db_path=DB_PATH):
         if not home or not away:
             rejected["invalid_fixture"] += 1
             continue
-        hf, af = team_form(history, home, kickoff), team_form(history, away, kickoff)
+        # Strict threshold (3 matches) remains mandatory for training and backtesting.
+        # Upcoming fallback >=1 is explicitly marked as low-history experimental.
+        home_n = team_prior_match_count(history, home, kickoff)
+        away_n = team_prior_match_count(history, away, kickoff)
+        hf = team_form(history, home, kickoff, minimum_matches=1)
+        af = team_form(history, away, kickoff, minimum_matches=1)
         if hf is None or af is None:
-            rejected["insufficient_prior_form"] += 1
+            rejected["no_prior_match_even_with_fallback"] += 1
             continue
         upcoming.append({"match_id": str(match_id), "match_name": name,
-                         "kickoff": kickoff, "features": hf + af})
+                         "kickoff": kickoff, "features": hf + af,
+                         "form_matches_home": home_n, "form_matches_away": away_n,
+                         "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
+                                            else "LOW_HISTORY_EXPERIMENTAL"})
     upcoming.sort(key=lambda r: r["kickoff"])
     return upcoming, dict(rejected)
 
@@ -249,7 +265,8 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     with PREDICTIONS_PATH.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "match_id", "match_name", "kickoff_utc", "prediction",
-            "prob_home", "prob_draw", "prob_away", "model_status"])
+            "prob_home", "prob_draw", "prob_away", "model_status",
+            "form_matches_home", "form_matches_away", "history_quality"])
         writer.writeheader()
         for row in predictions:
             writer.writerow({
@@ -259,7 +276,10 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                 "prob_home": round(row["probs"]["HOME"], 6),
                 "prob_draw": round(row["probs"]["DRAW"], 6),
                 "prob_away": round(row["probs"]["AWAY"], 6),
-                "model_status": pilot_status})
+                "model_status": pilot_status,
+                "form_matches_home": row["form_matches_home"],
+                "form_matches_away": row["form_matches_away"],
+                "history_quality": row["history_quality"]})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "home_then_away: points_per_game, goals_for_per_game, goals_against_per_game, goal_difference_per_game",
