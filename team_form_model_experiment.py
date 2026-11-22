@@ -10,7 +10,7 @@ import sklearn
 from sklearn.linear_model import LogisticRegression
 
 from baseline_market_evaluation import (
-    CLASSES, MARKET, build_dataset, classify_selection, fair_probs, parse_utc, score_metrics, split_teams as split_teams_norm,
+    CLASSES, MARKET, build_dataset, classify_selection, fair_probs, parse_utc, score_metrics, validate_probability_map, split_teams as split_teams_norm,
 )
 from match_results_report import norm as canonical_team_norm, squad_profile, split_teams
 
@@ -192,6 +192,7 @@ def evaluate(samples, market_rows):
         probs = {label: 0.0 for label in CLASSES}
         for label, value in zip(model.classes_, vector):
             probs[label] = float(value)
+        probs = validate_probability_map(probs)
         predictions.append({"match_id": current["match_id"],
                             "outcome": current["outcome"], "probs": probs,
                             "kickoff": current["kickoff"],
@@ -221,7 +222,8 @@ def evaluate(samples, market_rows):
         result["better_brier_than_market"] = (
             result["model_paired"]["brier_score"] < result["market_paired"]["brier_score"])
     result["status"] = "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
-    result["feature_set"] = "rolling_last_5_points_goals_for_goals_against"
+    result["calibration_status"] = "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED"
+    result["feature_set"] = "per_team_8_features_overall_plus_home_away_venue_form_last_5"
     result["team_name_matching"] = "curated_aliases_with_squad_separation"
     return result
 
@@ -358,6 +360,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             probs = {c: 0.0 for c in CLASSES}
             for label, p in zip(model.classes_, vector):
                 probs[label] = float(p)
+            probs = validate_probability_map(probs)
             predictions.append({**row, "probs": probs,
                                 "prediction": max(probs, key=probs.get)})
     PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -408,7 +411,8 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                     pilot_status)})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
-                 "feature_definition": "per_team: overall_form[points,gf,ga,gd] + venue_form[points,gf,ga,gd]; venue_form falls back to overall when fewer than 2 venue matches",
+                 "feature_definition": "16 total: per team overall_form[points,gf,ga,gd] + relevant_venue_form[points,gf,ga,gd]; venue_form falls back to overall when fewer than 2 venue matches",
+                  "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
                  "training_n": len(samples),
                  "trained_at_utc": datetime.now(timezone.utc).isoformat(),
                  "class_counts": dict(counts),
