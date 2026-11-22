@@ -38,10 +38,10 @@ class ModelReadinessAuditTests(unittest.TestCase):
 
     def test_production_threshold_is_separate_and_requires_200_matches(self):
         self.assertEqual(MIN_PRODUCTION_MATCHES, 200)
-        self.assertEqual(result["launch_status"], "COLLECTING_BELOW_EXPERIMENTAL_LAUNCH_THRESHOLD")
         result = audit_model_readiness(self.db, min_labeled_matches=1)
         self.assertEqual(result["status"], "READY_FOR_BASELINE_EXPERIMENTS")
-        self.assertEqual(result["production_status"], "PRODUCTION_SAMPLE_INSUFFICIENT")
+        self.assertEqual(result["launch_status"], "COLLECTING_BELOW_EXPERIMENTAL_LAUNCH_THRESHOLD")
+        self.assertEqual(result["production_status"], "ROBUST_VALIDATION_SAMPLE_INSUFFICIENT")
 
     def test_launch_threshold_is_30_matches_with_pre_match_odds(self):
         with sqlite3.connect(self.db) as conn:
