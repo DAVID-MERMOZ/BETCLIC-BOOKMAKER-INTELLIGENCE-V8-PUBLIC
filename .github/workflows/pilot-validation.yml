@@ -56,6 +56,9 @@ jobs:
       - name: Entrainer le pilote sur les matchs admissibles
         run: python team_form_model_experiment.py
 
+      - name: Generer les predictions echantillon des matchs du jour
+        run: python daily_fixture_sample.py
+
       - name: Publier le modele et le rapport du pilote
         if: always() && (hashFiles('reports/*.csv') != '' || hashFiles('artifacts/*.joblib') != '')
         uses: actions/upload-artifact@v4
@@ -63,6 +66,7 @@ jobs:
           name: betclic-pilot-model-${{ github.run_id }}
           path: |
             reports/team_form_predictions.csv
+            reports/todays_sample_predictions.csv
             artifacts/team_form_model.joblib
           if-no-files-found: warn
           retention-days: 30
