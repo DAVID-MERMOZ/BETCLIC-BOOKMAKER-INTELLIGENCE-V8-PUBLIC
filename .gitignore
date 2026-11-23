@@ -11,5 +11,6 @@ __pycache__/
 /data/
 /reports/*
 !/reports/match_validation_registry.csv
+!/reports/telegram_prediction_state.json
 *.gz
 *.zip

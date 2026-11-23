@@ -20,11 +20,11 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: betclic-pilot-validation
+  group: betclic-prediction-pipeline
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   pilot:
