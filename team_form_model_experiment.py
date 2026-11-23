@@ -280,7 +280,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
     with sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True) as conn:
         history = load_history(conn)
         fixtures = conn.execute("""
-            SELECT match_id, match_name, match_date
+            SELECT match_id, match_name, match_date, competition_name
             FROM matches
             WHERE sport='football' AND COALESCE(is_live, 0)=0
         """).fetchall()
@@ -298,7 +298,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
             for mid, selection, price, collected_at in odds_rows:
                 odds_by_match[str(mid)].append((selection, price, collected_at))
     upcoming, rejected = [], defaultdict(int)
-    for match_id, name, match_date in fixtures:
+    for match_id, name, match_date, competition_name in fixtures:
         kickoff = parse_utc(match_date)
         if kickoff is None:
             rejected["invalid_date"] += 1
@@ -327,6 +327,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
             "status": "NOT_TRIGGERED", "triggered_moves": {}, "items": []
         }
         upcoming.append({"match_id": str(match_id), "match_name": name,
+                         "competition_name": competition_name or "Championnat non renseigné",
 "kickoff": kickoff, "features": (team_form_features(history, home, kickoff, "HOME", minimum_matches=1) + team_form_features(history, away, kickoff, "AWAY", minimum_matches=1)),
                          "form_matches_home": home_n, "form_matches_away": away_n,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
@@ -390,7 +391,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with PREDICTIONS_PATH.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
-            "match_id", "match_name", "kickoff_utc", "prediction",
+            "match_id", "competition_name", "match_name", "kickoff_utc", "prediction",
             "prob_home", "prob_draw", "prob_away", "model_status",
             "form_matches_home", "form_matches_away", "history_quality",
             "market_status", "market_snapshot_utc", "market_prob_home",
@@ -399,7 +400,9 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
         writer.writeheader()
         for row in predictions:
             writer.writerow({
-                "match_id": row["match_id"], "match_name": row["match_name"],
+                "match_id": row["match_id"],
+                "competition_name": row.get("competition_name", "Championnat non renseigné"),
+                "match_name": row["match_name"],
                 "kickoff_utc": row["kickoff"].isoformat(),
                 "prediction": row["prediction"],
                 "prob_home": round(row["probs"]["HOME"], 6),
