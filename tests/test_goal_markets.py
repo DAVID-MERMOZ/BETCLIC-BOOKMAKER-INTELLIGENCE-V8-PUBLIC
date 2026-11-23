@@ -20,8 +20,8 @@ class GoalMarketTests(unittest.TestCase):
         t = datetime(2026, 11, 20, tzinfo=timezone.utc)
         hist = []
         for i in range(12):
-            hist.append({"date": t - timedelta(days=20-i), "home": "H" if i % 2 == 0 else "X",
-                         "away": "X" if i % 2 == 0 else "H", "hg": 2, "ag": 1})
+            hist.append({"date": t - timedelta(days=20-i), "home": "H",
+                         "away": "X", "hg": 2, "ag": 1})
         hist += [{"date": t + timedelta(days=1), "home": "H", "away": "A", "hg": 8, "ag": 8}]
         result = predict_goal_markets(hist, "H", "A", t)
         self.assertEqual(result["status"], "NO_BET_INSUFFICIENT_GOAL_HISTORY")
