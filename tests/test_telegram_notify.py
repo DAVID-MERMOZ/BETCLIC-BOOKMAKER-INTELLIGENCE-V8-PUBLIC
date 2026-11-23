@@ -29,7 +29,7 @@ class TelegramNotificationTests(unittest.TestCase):
         self.assertIn("Heure : 19:30", message)  # UTC+1, Cameroon
         self.assertIn("1 61.0%", message)
         self.assertIn("NO_BET_MODEL_UNVALIDATED", message)
-        self.assertIn("Over 2,5 57.0%", message)
+        self.assertIn("Over 2,5 : 57.0%", message)
 
     def test_kickoff_handles_missing_and_invalid_values(self):
         self.assertIn("non renseignée", format_kickoff(""))
