@@ -36,9 +36,9 @@ class TargetedMarketRefreshTests(unittest.TestCase):
                 ],
             )
         with self.changes.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=["match_id"])
+            writer = csv.DictWriter(handle, fieldnames=["match_id", "market_name"])
             writer.writeheader()
-            writer.writerow({"match_id": "m1"})
+            writer.writerow({"match_id": "m1", "market_name": "Résultat du match (t. rég)"})
         with self.predictions.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=["match_id", "match_name", "model_status"])
             writer.writeheader()
