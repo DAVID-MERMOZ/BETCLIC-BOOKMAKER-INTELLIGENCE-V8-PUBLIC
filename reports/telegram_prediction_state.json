@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "sources": {
+    "todays_sample_predictions.csv": {
+      "signature": "94dc6b681e6652c77d9d415dab0f56c90a39dd28436255f0c50c3529306d5dec",
+      "predictions": [],
+      "sent_at_utc": "2026-11-23T21:46:23Z"
+    }
+  }
+}
