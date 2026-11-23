@@ -133,11 +133,45 @@ def save_state(state, path=STATE_PATH, commit_to_git=None):
                 raise RuntimeError("Impossible de vérifier l'état Git indexé.")
             subprocess.run(["git", "commit", "-m", "Enregistrer l'état anti-doublon Telegram"],
                            check=True, capture_output=True, text=True)
-            subprocess.run(["git", "push", "origin", "HEAD:main"],
-                           check=True, capture_output=True, text=True)
+
+            # Another repository update can land after checkout and before push.
+            # Fetch/rebase and retry a bounded number of times instead of failing
+            # immediately with a non-fast-forward rejection.
+            last_error = ""
+            for attempt in range(3):
+                pushed = subprocess.run(
+                    ["git", "push", "origin", "HEAD:main"],
+                    capture_output=True, text=True,
+                )
+                if pushed.returncode == 0:
+                    return
+                last_error = (pushed.stderr or pushed.stdout or "").strip()[:180]
+
+                fetched = subprocess.run(
+                    ["git", "fetch", "origin", "main"],
+                    capture_output=True, text=True,
+                )
+                if fetched.returncode != 0:
+                    last_error = (fetched.stderr or fetched.stdout or last_error).strip()[:180]
+                    continue
+
+                rebased = subprocess.run(
+                    ["git", "rebase", "origin/main"],
+                    capture_output=True, text=True,
+                )
+                if rebased.returncode != 0:
+                    subprocess.run(["git", "rebase", "--abort"],
+                                   capture_output=True, text=True)
+                    last_error = (rebased.stderr or rebased.stdout or "conflit pendant le rebase").strip()[:180]
+                    break
+
+            suffix = f" Détail : {last_error}" if last_error else ""
+            raise RuntimeError(
+                "Envoi effectué mais persistance Git de l'état Telegram échouée après 3 tentatives." + suffix
+            )
         except subprocess.CalledProcessError as exc:
             # Do not print command arguments or environment (which could contain credentials).
-            detail = (exc.stderr or "").strip()[:240]
+            detail = (exc.stderr or "").strip()[:180]
             suffix = f" Détail : {detail}" if detail else ""
             raise RuntimeError("Envoi effectué mais persistance Git de l'état Telegram échouée." + suffix) from None
 
