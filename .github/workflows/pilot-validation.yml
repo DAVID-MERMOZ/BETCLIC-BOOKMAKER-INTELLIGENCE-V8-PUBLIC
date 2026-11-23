@@ -63,6 +63,9 @@ jobs:
       - name: Actualiser les fixtures et cotes Betclic avant les predictions
         run: python betclic_probe.py
 
+      - name: Detecter les changements de cotes sans modifier la base
+        run: python lightweight_change_collector.py
+
       - name: Executer les tests
         run: python -m unittest discover -s tests -v
 
@@ -71,6 +74,9 @@ jobs:
 
       - name: Generer les predictions echantillon des matchs du jour
         run: python daily_fixture_sample.py
+
+      - name: Actualiser les probabilites de marche des matchs affectes
+        run: python targeted_market_refresh.py
 
       - name: Notifier le nouvel echantillon de predictions sur Telegram
         env:
@@ -88,6 +94,8 @@ jobs:
           path: |
             reports/team_form_predictions.csv
             reports/todays_sample_predictions.csv
+            reports/changes_to_refresh.csv
+            reports/targeted_market_refresh.csv
             artifacts/team_form_model.joblib
           if-no-files-found: warn
           retention-days: 30
