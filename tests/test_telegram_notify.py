@@ -1,4 +1,5 @@
 import unittest
+from html.parser import HTMLParser
 from unittest.mock import Mock
 from telegram_notify import build_message, format_kickoff, send_telegram
 
@@ -78,6 +79,40 @@ class TelegramNotificationTests(unittest.TestCase):
         request = opener.call_args.args[0]
         self.assertIn("secret-token", request.full_url)
         self.assertEqual(request.get_header("Content-type"), "application/json")
+
+
+    def test_long_message_is_truncated_only_between_complete_html_blocks(self):
+        class BalanceChecker(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.stack = []
+                self.errors = []
+            def handle_starttag(self, tag, attrs):
+                if tag not in {"br", "hr", "img", "meta", "link", "input"}:
+                    self.stack.append(tag)
+            def handle_endtag(self, tag):
+                if not self.stack or self.stack[-1] != tag:
+                    self.errors.append(tag)
+                else:
+                    self.stack.pop()
+
+        rows = [{
+            "competition_name": "Championnat " + str(i),
+            "match_name": "Equipe A " + ("X" * 500) + " - Equipe B",
+            "kickoff_utc": "2026-11-24T18:00:00Z",
+            "prediction_1x2": "HOME",
+            "prob_home": "0.60", "prob_draw": "0.25", "prob_away": "0.15",
+            "action_status": "NO_BET_MODEL_UNVALIDATED",
+            "web_research_status": "RESULTS_FOUND",
+            "web_research_findings_json": '[{"title":"' + ("Actualite " * 50) + '","source_name":"Source","url":"https://example.com"}]'
+        } for i in range(20)]
+        message = build_message(rows)
+        checker = BalanceChecker()
+        checker.feed(message)
+        checker.close()
+        self.assertLessEqual(len(message), 4096)
+        self.assertEqual(checker.errors, [])
+        self.assertEqual(checker.stack, [])
 
 
 if __name__ == "__main__":
