@@ -31,6 +31,25 @@ class TelegramNotificationTests(unittest.TestCase):
         self.assertIn("NO_BET_MODEL_UNVALIDATED", message)
         self.assertIn("Over 2,5 : 57.0%", message)
 
+
+    def test_daily_sample_prediction_schema_is_supported(self):
+        message = build_message([{
+            "competition_name": "Ligue 1",
+            "match_name": "Alpha - Beta",
+            "kickoff_utc": "2026-11-23T18:30:00+00:00",
+            "prediction_1x2": "DRAW",
+            "prob_home": "0.30",
+            "prob_draw": "0.45",
+            "prob_away": "0.25",
+            "action_status": "NO_BET_MODEL_UNVALIDATED",
+            "over_2_5": "0.56",
+            "btts_yes": "0.51",
+        }])
+        self.assertIn("Pronostic modèle : <b>N</b>", message)
+        self.assertIn("Probabilités modèle (1/N/2) : 1 30.0% / N 45.0% / 2 25.0%", message)
+        self.assertIn("Championnat : Ligue 1", message)
+        self.assertIn("Over 2,5 : 56.0%", message)
+
     def test_kickoff_handles_missing_and_invalid_values(self):
         self.assertIn("non renseignée", format_kickoff(""))
         self.assertIn("invalide", format_kickoff("not-a-date"))
