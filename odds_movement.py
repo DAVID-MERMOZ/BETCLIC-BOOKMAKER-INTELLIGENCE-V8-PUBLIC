@@ -50,6 +50,16 @@ def summarize_1x2_movement(odds_rows, match_name, cutoff):
                 opening_odds[label]) * 100
         for label in CLASSES
     }
+    # Detecter aussi chaque saut entre deux snapshots successifs : un mouvement
+    # important qui se resorbe avant le dernier relevé ne doit pas disparaitre.
+    max_step_changes = {label: 0.0 for label in CLASSES}
+    for previous, current in zip(complete, complete[1:]):
+        previous_odds, current_odds = previous[1], current[1]
+        for label in CLASSES:
+            step = ((current_odds[label] - previous_odds[label]) /
+                    previous_odds[label]) * 100
+            if abs(step) > abs(max_step_changes[label]):
+                max_step_changes[label] = step
     changed = [label for label, delta in deltas.items() if abs(delta) >= 1.0]
     if len(changed) >= 2:
         pattern = "REPRICING_MULTI_SELECTION"
@@ -67,6 +77,7 @@ def summarize_1x2_movement(odds_rows, match_name, cutoff):
         "latest_probabilities": latest_probs,
         "probability_delta_pp": deltas,
         "odds_change_pct": odds_changes,
+        "max_step_odds_change_pct": max_step_changes,
         "pattern": pattern,
         "cause_status": "CAUSE_UNVERIFIED_NO_EVENT_FEED",
     }
