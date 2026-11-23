@@ -82,3 +82,86 @@ class TelegramNotificationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TelegramHybridDedupTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        from pathlib import Path
+        self.state_path = Path(self.temp.name) / "telegram_state.json"
+        self.rows = [{
+            "match_id": "fixture-42",
+            "competition_name": "Ligue 1",
+            "match_name": "Alpha - Beta",
+            "kickoff_utc": "2026-11-24T18:00:00+00:00",
+            "prediction_1x2": "HOME",
+            "prob_home": "0.61234",
+            "prob_draw": "0.24001",
+            "prob_away": "0.14765",
+            "market_prob_home": "0.55",
+            "market_prob_draw": "0.25",
+            "market_prob_away": "0.20",
+            "max_abs_edge_pp": "6.2",
+            "action_status": "NO_BET_MODEL_UNVALIDATED",
+            "model_status": "EXPERIMENTAL",
+            "market_status": "AVAILABLE",
+            "comparison_status": "NO_LARGE_DIVERGENCE",
+            "over_2_5": "0.57",
+            "btts_yes": "0.52",
+        }]
+
+    def _process(self, rows, sender):
+        from telegram_dedup import process_predictions
+        return process_predictions(
+            rows, "token", "chat", "https://example.test/run",
+            "todays_sample_predictions.csv",
+            lambda data, url, revision=False: ("REVISION:" if revision else "FIRST:") + str(data),
+            sender, state_path=self.state_path, commit_to_git=False,
+        )
+
+    def test_first_table_is_sent_once_and_identical_table_is_skipped(self):
+        sender = Mock()
+        first = self._process(self.rows, sender)
+        second = self._process(self.rows, sender)
+        self.assertEqual(first["status"], "FIRST_TABLE_SENT")
+        self.assertEqual(second["status"], "UNCHANGED_SKIPPED")
+        self.assertEqual(sender.call_count, 1)
+
+    def test_real_prediction_change_sends_revision(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        changed = [dict(self.rows[0], prediction_1x2="DRAW",
+                        prob_home="0.20", prob_draw="0.60", prob_away="0.20")]
+        result = self._process(changed, sender)
+        self.assertEqual(result["status"], "REVISION_SENT")
+        self.assertEqual(sender.call_count, 2)
+        self.assertTrue(sender.call_args.args[0].startswith("REVISION:"))
+
+    def test_metadata_and_row_order_only_do_not_trigger_message(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        metadata_only = [dict(self.rows[0], generated_at_utc="2099-01-01T00:00:00Z",
+                              training_n="999", run_id="different")]
+        result = self._process(metadata_only, sender)
+        self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
+        self.assertEqual(sender.call_count, 1)
+
+    def test_failed_telegram_send_does_not_advance_state_and_can_retry(self):
+        failing = Mock(side_effect=RuntimeError("temporary Telegram failure"))
+        with self.assertRaises(RuntimeError):
+            self._process(self.rows, failing)
+        sender = Mock()
+        result = self._process(self.rows, sender)
+        self.assertEqual(result["status"], "FIRST_TABLE_SENT")
+        self.assertEqual(sender.call_count, 1)
+
+    def test_repeated_concurrent_workflow_result_is_idempotent_after_first_commit(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        # Both workflows share one GitHub Actions concurrency group; a later
+        # serialized execution must observe the persisted state and skip.
+        result = self._process(list(reversed(self.rows)), sender)
+        self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
+        self.assertEqual(sender.call_count, 1)

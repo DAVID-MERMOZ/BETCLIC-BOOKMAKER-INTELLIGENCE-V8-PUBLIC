@@ -74,8 +74,9 @@ def _news_lines(row):
     return lines
 
 
-def build_message(rows, run_url=""):
-    lines = ["<b>BETCLIC V8.1 — Collecte et prédictions</b>"]
+def build_message(rows, run_url="", revision=False):
+    heading = "BETCLIC V8.1 — MISE À JOUR DES PRÉDICTIONS" if revision else "BETCLIC V8.1 — Collecte et prédictions"
+    lines = [f"<b>{heading}</b>"]
     lines.append(f"Matchs avec prédiction : <b>{len(rows)}</b>")
     if not rows:
         lines.append("Aucune prédiction exploitable pour cette collecte. Vérifier la disponibilité des matchs et des données.")
@@ -166,9 +167,17 @@ def main():
         print("NOTIFICATION TELEGRAM IGNORÉE : secrets TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID non configurés.")
         return 0
     rows = read_predictions()
-    message = build_message(rows, os.getenv("GITHUB_RUN_URL", ""))
-    send_telegram(message, token, chat_id)
-    print(f"NOTIFICATION TELEGRAM ENVOYÉE : {len(rows)} prédiction(s).")
+    from telegram_dedup import process_predictions
+    result = process_predictions(
+        rows=rows,
+        token=token,
+        chat_id=chat_id,
+        run_url=os.getenv("GITHUB_RUN_URL", ""),
+        source_key=PREDICTIONS_PATH.name,
+        message_builder=build_message,
+        sender=send_telegram,
+    )
+    print("TELEGRAM :", result)
     return 0
 
 
