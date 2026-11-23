@@ -33,6 +33,17 @@ def ensure_schema(conn):
             market_prob_draw REAL,
             market_prob_away REAL,
             action_status TEXT,
+            goal_model_status TEXT,
+            lambda_home REAL,
+            lambda_away REAL,
+            over_1_5 REAL, under_1_5 REAL,
+            over_2_5 REAL, under_2_5 REAL,
+            over_3_5 REAL, under_3_5 REAL,
+            btts_yes REAL, btts_no REAL,
+            actual_over_1_5 INTEGER,
+            actual_over_2_5 INTEGER,
+            actual_over_3_5 INTEGER,
+            actual_btts_yes INTEGER,
             actual_outcome TEXT,
             actual_home_score INTEGER,
             actual_away_score INTEGER,
@@ -40,6 +51,19 @@ def ensure_schema(conn):
             UNIQUE(workflow_run_id, match_id)
         )
     """)
+    # Migration additive pour les bases persistantes déjà créées.
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(prediction_history)")}
+    additions = {
+        "goal_model_status": "TEXT", "lambda_home": "REAL", "lambda_away": "REAL",
+        "over_1_5": "REAL", "under_1_5": "REAL", "over_2_5": "REAL",
+        "under_2_5": "REAL", "over_3_5": "REAL", "under_3_5": "REAL",
+        "btts_yes": "REAL", "btts_no": "REAL",
+        "actual_over_1_5": "INTEGER", "actual_over_2_5": "INTEGER",
+        "actual_over_3_5": "INTEGER", "actual_btts_yes": "INTEGER",
+    }
+    for name, kind in additions.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE prediction_history ADD COLUMN {name} {kind}")
     conn.execute("""
         CREATE INDEX IF NOT EXISTS idx_prediction_history_match
         ON prediction_history(match_id, generated_at_utc)
@@ -80,6 +104,17 @@ def persist_predictions(db_path=DB_PATH, csv_path=CSV_PATH, run_id=None,
                 _float_or_none(row.get("market_prob_draw")),
                 _float_or_none(row.get("market_prob_away")),
                 row.get("action_status"),
+                row.get("goal_model_status") or None,
+                _float_or_none(row.get("lambda_home")),
+                _float_or_none(row.get("lambda_away")),
+                _float_or_none(row.get("over_1_5")),
+                _float_or_none(row.get("under_1_5")),
+                _float_or_none(row.get("over_2_5")),
+                _float_or_none(row.get("under_2_5")),
+                _float_or_none(row.get("over_3_5")),
+                _float_or_none(row.get("under_3_5")),
+                _float_or_none(row.get("btts_yes")),
+                _float_or_none(row.get("btts_no")),
             )
             cursor = conn.execute("""
                 INSERT OR IGNORE INTO prediction_history (
@@ -87,8 +122,11 @@ def persist_predictions(db_path=DB_PATH, csv_path=CSV_PATH, run_id=None,
                     kickoff_utc, prediction, prob_home, prob_draw, prob_away,
                     model_status, history_quality, market_status,
                     market_snapshot_utc, market_prob_home, market_prob_draw,
-                    market_prob_away, action_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    market_prob_away, action_status, goal_model_status,
+                    lambda_home, lambda_away, over_1_5, under_1_5,
+                    over_2_5, under_2_5, over_3_5, under_3_5, btts_yes, btts_no
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, values)
             inserted += cursor.rowcount
 
@@ -113,9 +151,15 @@ def persist_predictions(db_path=DB_PATH, csv_path=CSV_PATH, run_id=None,
             cursor = conn.execute("""
                 UPDATE prediction_history
                 SET actual_outcome=?, actual_home_score=?, actual_away_score=?,
-                    evaluated_at_utc=?
+                    actual_over_1_5=?, actual_over_2_5=?, actual_over_3_5=?,
+                    actual_btts_yes=?, evaluated_at_utc=?
                 WHERE match_id=? AND actual_outcome IS NULL
-            """, (outcome, home_score, away_score, evaluated_at, str(match_id)))
+            """, (outcome, home_score, away_score,
+                  int(home_score + away_score >= 2),
+                  int(home_score + away_score >= 3),
+                  int(home_score + away_score >= 4),
+                  int(home_score > 0 and away_score > 0),
+                  evaluated_at, str(match_id)))
             evaluated += cursor.rowcount
 
         total = conn.execute("SELECT COUNT(*) FROM prediction_history").fetchone()[0]
