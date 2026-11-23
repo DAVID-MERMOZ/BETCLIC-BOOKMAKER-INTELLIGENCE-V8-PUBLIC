@@ -1,4 +1,7 @@
-"""Conserve les snapshots de predictions et rattache les scores confirmes."""
+"""Conserve les snapshots de predictions et rattache les scores confirmes.
+
+Les scores ambigus restent en attente; un resultat deja evalue n est jamais ecrase.
+"""
 import csv
 import os
 import sqlite3
