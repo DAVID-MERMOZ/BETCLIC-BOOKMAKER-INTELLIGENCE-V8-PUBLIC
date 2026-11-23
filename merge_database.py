@@ -40,10 +40,26 @@ def merge_databases(remote_path):
         conn.execute("ATTACH DATABASE ? AS remote", (str(remote_path),))
 
         if table_exists(conn, "remote", "matches"):
-            conn.execute("""
-                INSERT OR IGNORE INTO main.matches
-                SELECT * FROM remote.matches
-            """)
+            # Support both legacy (5-column) and current (6-column) schemas.
+            # Explicit column mapping prevents INSERT failures when the local
+            # database has gained competition_name through an idempotent migration.
+            local_columns = {
+                row[1] for row in conn.execute("PRAGMA main.table_info(matches)")
+            }
+            remote_columns = {
+                row[1] for row in conn.execute("PRAGMA remote.table_info(matches)")
+            }
+            shared_columns = [
+                name for name in ("match_id", "match_name", "match_date", "sport", "is_live", "competition_name")
+                if name in local_columns and name in remote_columns
+            ]
+            if "match_id" not in shared_columns:
+                raise RuntimeError("Schema matches distant invalide : match_id absent.")
+            column_sql = ", ".join(shared_columns)
+            conn.execute(
+                f"INSERT OR IGNORE INTO main.matches ({column_sql}) "
+                f"SELECT {column_sql} FROM remote.matches"
+            )
 
         if table_exists(conn, "remote", "odds_history"):
             # Index persistant : créé une seule fois, puis réutilisé à
