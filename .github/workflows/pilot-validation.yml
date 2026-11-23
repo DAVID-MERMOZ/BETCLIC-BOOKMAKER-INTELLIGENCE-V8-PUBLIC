@@ -8,6 +8,8 @@ on:
       - "database.py"
       - "betclic_probe.py"
       - "daily_fixture_sample.py"
+      - "lightweight_change_collector.py"
+      - "targeted_market_refresh.py"
       - "telegram_notify.py"
       - "tests/test_telegram_notify.py"
       - "baseline_market_evaluation.py"
