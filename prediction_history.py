@@ -126,7 +126,7 @@ def persist_predictions(db_path=DB_PATH, csv_path=CSV_PATH, run_id=None,
                     lambda_home, lambda_away, over_1_5, under_1_5,
                     over_2_5, under_2_5, over_3_5, under_3_5, btts_yes, btts_no
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, values)
             inserted += cursor.rowcount
 
