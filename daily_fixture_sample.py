@@ -47,12 +47,12 @@ def main():
         )
 
     now = datetime.now(timezone.utc)
+    history = load_history_from_db(DB_PATH)
     rows = []
     for fixture in upcoming:
         vector = fixture["features"]
         probs = probabilities(model, vector)
         balanced = probabilities(balanced_model, vector) if balanced_model else None
-        history = load_history_from_db(DB_PATH)
         home_key, away_key = split_team_keys(fixture["match_name"])
         goals = predict_goal_markets(history, home_key, away_key, fixture["kickoff"])
         row = {
