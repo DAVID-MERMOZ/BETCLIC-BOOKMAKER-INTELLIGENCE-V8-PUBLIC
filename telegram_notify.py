@@ -7,12 +7,15 @@ import html
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 PREDICTIONS_PATH = Path("reports/team_form_predictions.csv")
 OUTCOMES = {"HOME": "1", "DRAW": "N", "AWAY": "2"}
+LOCAL_TIMEZONE = "Africa/Douala"
 
 
 def _pct(value):
@@ -22,12 +25,62 @@ def _pct(value):
         return "n/d"
 
 
+def format_kickoff(value, timezone_name=LOCAL_TIMEZONE):
+    """Return the fixture date and time in Cameroon local time."""
+    if not value:
+        return "Date : non renseignée | Heure : non renseignée"
+    try:
+        stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=timezone.utc)
+        try:
+            local = stamp.astimezone(ZoneInfo(timezone_name))
+            zone_label = "heure du Cameroun"
+        except ZoneInfoNotFoundError:
+            local = stamp.astimezone(timezone.utc)
+            zone_label = "UTC (fuseau local indisponible)"
+        return f"Date : {local:%d/%m/%Y} | Heure : {local:%H:%M} ({zone_label})"
+    except (TypeError, ValueError, OverflowError):
+        return "Date : invalide | Heure : invalide"
+
+
+def _market_summary(row):
+    fields = ("market_prob_home", "market_prob_draw", "market_prob_away")
+    if not all(row.get(field) not in (None, "") for field in fields):
+        return "Marché Betclic 1/N/2 : non disponible"
+    return "Marché Betclic 1/N/2 : " + " / ".join(
+        f"{label} {_pct(row.get(field))}"
+        for label, field in zip(("1", "N", "2"), fields)
+    )
+
+
+def _news_lines(row):
+    raw = row.get("web_research_findings_json", "")
+    if not raw:
+        return []
+    try:
+        items = json.loads(raw)
+    except (TypeError, ValueError):
+        return []
+    lines = []
+    for item in items[:2]:
+        title = html.escape(str(item.get("title") or "Information consultée"))
+        source = html.escape(str(item.get("source_name") or item.get("source") or "Source"))
+        url = str(item.get("url") or "")
+        if url.startswith(("https://", "http://")):
+            lines.append(f'Info : <a href="{html.escape(url, quote=True)}">{title}</a> — {source}')
+        else:
+            lines.append(f"Info : {title} — {source}")
+    return lines
+
+
 def build_message(rows, run_url=""):
-    lines = ["<b>BETCLIC V8.1 — Résultats de collecte et prédictions</b>"]
+    lines = ["<b>BETCLIC V8.1 — Collecte et prédictions</b>"]
     lines.append(f"Matchs avec prédiction : <b>{len(rows)}</b>")
     if not rows:
         lines.append("Aucune prédiction exploitable pour cette collecte. Vérifier la disponibilité des matchs et des données.")
     for row in rows[:12]:
+        competition = html.escape(row.get("competition_name") or "Championnat non renseigné")
         name = html.escape(row.get("match_name") or "Match sans nom")
         prediction = row.get("prediction", "")
         action = row.get("action_status", "NO_BET")
@@ -37,22 +90,36 @@ def build_message(rows, run_url=""):
         )
         lines.extend([
             "",
+            f"<b>Championnat : {competition}</b>",
+            html.escape(format_kickoff(row.get("kickoff_utc"))),
             f"<b>{name}</b>",
             f"Pronostic modèle : <b>{OUTCOMES.get(prediction, html.escape(prediction or 'n/d'))}</b>",
-            f"Probabilités (1/N/2) : {probs}",
+            f"Probabilités modèle (1/N/2) : {probs}",
+            _market_summary(row),
+            f"Écart maximal modèle/marché : {_pct(float(row['max_abs_edge_pp']) / 100) if row.get('max_abs_edge_pp') not in (None, '') else 'n/d'}",
             f"Décision : <b>{html.escape(action)}</b>",
         ])
         if row.get("over_2_5") not in (None, ""):
-            lines.append(f"Over 2,5 : {_pct(row.get('over_2_5'))} | BTTS : {_pct(row.get('btts_yes'))}")
-        movement = row.get("web_research_status")
-        if movement and movement != "NOT_TRIGGERED":
-            lines.append(f"Recherche web mouvement de cote : {html.escape(movement)}")
+            lines.append(
+                f"Buts : Over 1,5 {_pct(row.get('over_1_5'))} | "
+                f"Over 2,5 {_pct(row.get('over_2_5'))} | "
+                f"Over 3,5 {_pct(row.get('over_3_5'))} | "
+                f"BTTS Oui {_pct(row.get('btts_yes'))}"
+            )
+        movement = row.get("market_movement_status")
+        if movement and movement != "NO_DATA":
+            pattern = html.escape(row.get("market_movement_pattern") or "profil non précisé")
+            lines.append(f"Mouvement des cotes : {html.escape(movement)} — {pattern}")
+        research = row.get("web_research_status")
+        if research and research != "NOT_TRIGGERED":
+            lines.append(f"Recherche actualités : {html.escape(research)}")
+            lines.extend(_news_lines(row))
     if len(rows) > 12:
         lines.append(f"… et {len(rows) - 12} autre(s) match(s) dans le rapport.")
     if run_url:
         lines.extend(["", f'<a href="{html.escape(run_url, quote=True)}">Ouvrir le rapport complet GitHub Actions</a>'])
     lines.append("")
-    lines.append("<i>Modèle expérimental : probabilités non garanties, NO BET conservé si données insuffisantes.</i>")
+    lines.append("<i>Modèle expérimental : probabilités non garanties. NO BET si données insuffisantes ou modèle non validé.</i>")
     message = "\n".join(lines)
     return message[:3900]
 
