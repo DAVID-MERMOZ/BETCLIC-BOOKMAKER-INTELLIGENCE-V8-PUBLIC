@@ -57,6 +57,33 @@ class SaveOddsDeduplicationTests(unittest.TestCase):
         self.assertEqual(count, 2)
         self.assertEqual(distinct_dates, 2)
 
+    def test_save_match_persists_competition_name(self):
+        match = SimpleNamespace(
+            id="match-competition", name="Alpha - Beta",
+            date="2026-11-24T18:00:00+00:00", is_live=False,
+            competition="Ligue de test",
+        )
+        database.save_match(match)
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT competition_name FROM matches WHERE match_id=?",
+                ("match-competition",),
+            ).fetchone()
+        self.assertEqual(row[0], "Ligue de test")
+
+    def test_initialize_migrates_legacy_matches_table(self):
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE matches (
+                    match_id TEXT PRIMARY KEY, match_name TEXT,
+                    match_date TEXT, sport TEXT, is_live INTEGER
+                )
+            """)
+        database.initialize_database()
+        with sqlite3.connect(self.db_path) as conn:
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(matches)")}
+        self.assertIn("competition_name", columns)
+
     def test_composite_lookup_index_is_created(self):
         with sqlite3.connect(self.db_path) as conn:
             indexes = {
