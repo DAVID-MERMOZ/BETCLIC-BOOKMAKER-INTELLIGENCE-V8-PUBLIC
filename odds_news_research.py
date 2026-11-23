@@ -86,7 +86,7 @@ def research_match_news(match_name, movements, timeout=12, max_items=5):
             except (TypeError, ValueError, OverflowError):
                 published_utc = ""
             excerpt = re.sub(r"<[^>]+>", " ", description)
-            excerpt = re.sub(r"\\s+", " ", excerpt).strip()[:500]
+            excerpt = re.sub(r"\s+", " ", excerpt).strip()[:500]
             items.append({"title": title, "source": source, "url": link,
                           "published_at_utc": published_utc, "excerpt": excerpt})
         items = filter_recent_news_items(items, now=checked_at_dt)
