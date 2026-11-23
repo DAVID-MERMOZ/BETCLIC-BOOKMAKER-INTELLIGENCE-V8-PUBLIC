@@ -45,7 +45,7 @@ def split_teams(name: str):
 
 def outcome_for_selection(selection, home, away):
     label = norm(selection)
-    if label in {"x", "draw", "tie", "nul", "match nul", "empate"}:
+    if label in {"x", "n", "d", "draw", "tie", "nul", "match nul", "egalite", "empate"}:
         return "DRAW"
     if label in {"1", "home", "home win", "domicile", "victoire domicile"} or label == home:
         return "HOME"
