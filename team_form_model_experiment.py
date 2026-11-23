@@ -13,6 +13,7 @@ from baseline_market_evaluation import (
     CLASSES, MARKET, build_dataset, classify_selection, fair_probs, parse_utc, score_metrics, validate_probability_map, split_teams as split_teams_norm,
 )
 from match_results_report import norm as canonical_team_norm, squad_profile, split_teams
+from goal_markets import predict_goal_markets
 
 
 def team_key(name):
@@ -339,6 +340,16 @@ def fit_final_model(samples):
     return model
 
 
+def split_team_keys(match_name):
+    home, away = split_teams(match_name)
+    return team_key(home), team_key(away)
+
+
+def load_history_from_db(db_path):
+    with sqlite3.connect(f"file:{Path(db_path).resolve()}?mode=ro", uri=True) as conn:
+        return load_history(conn)
+
+
 def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     model = fit_final_model(samples)
     if model is None:
@@ -353,6 +364,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     print("Validation croisee :", evaluation_status or "non executee")
     print("Statut du modele :", pilot_status)
     upcoming, rejected = build_upcoming_dataset(db_path)
+    history_for_goals = load_history_from_db(db_path)
     predictions = []
     if upcoming:
         vectors = model.predict_proba([r["features"] for r in upcoming])
@@ -361,8 +373,10 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             for label, p in zip(model.classes_, vector):
                 probs[label] = float(p)
             probs = validate_probability_map(probs)
+            goal_probs = predict_goal_markets(history_for_goals, *split_team_keys(row["match_name"]), row["kickoff"])
             predictions.append({**row, "probs": probs,
-                                "prediction": max(probs, key=probs.get)})
+                                "prediction": max(probs, key=probs.get),
+                                "goal_markets": goal_probs})
     PREDICTIONS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with PREDICTIONS_PATH.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
@@ -371,7 +385,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             "form_matches_home", "form_matches_away", "history_quality",
             "market_status", "market_snapshot_utc", "market_prob_home",
             "market_prob_draw", "market_prob_away", "edge_home_pp",
-            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status", "action_status"])
+            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status", "action_status", "goal_model_status", "lambda_home", "lambda_away", "goal_history_home_n", "goal_history_away_n", "over_1_5", "under_1_5", "over_2_5", "under_2_5", "over_3_5", "under_3_5", "btts_yes", "btts_no"])
         writer.writeheader()
         for row in predictions:
             writer.writerow({
@@ -408,7 +422,20 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                     row["history_quality"],
                     market_comparison_status(row["probs"],
                         row["market_snapshot"][2] if row.get("market_snapshot") else None),
-                    pilot_status)})
+                    pilot_status),
+                "goal_model_status": row["goal_markets"].get("status"),
+                "lambda_home": round(row["goal_markets"]["lambda_home"], 4) if "lambda_home" in row["goal_markets"] else "",
+                "lambda_away": round(row["goal_markets"]["lambda_away"], 4) if "lambda_away" in row["goal_markets"] else "",
+                "goal_history_home_n": row["goal_markets"].get("home_history_n", ""),
+                "goal_history_away_n": row["goal_markets"].get("away_history_n", ""),
+                "over_1_5": round(row["goal_markets"]["OVER_1_5"], 6) if "OVER_1_5" in row["goal_markets"] else "",
+                "under_1_5": round(row["goal_markets"]["UNDER_1_5"], 6) if "UNDER_1_5" in row["goal_markets"] else "",
+                "over_2_5": round(row["goal_markets"]["OVER_2_5"], 6) if "OVER_2_5" in row["goal_markets"] else "",
+                "under_2_5": round(row["goal_markets"]["UNDER_2_5"], 6) if "UNDER_2_5" in row["goal_markets"] else "",
+                "over_3_5": round(row["goal_markets"]["OVER_3_5"], 6) if "OVER_3_5" in row["goal_markets"] else "",
+                "under_3_5": round(row["goal_markets"]["UNDER_3_5"], 6) if "UNDER_3_5" in row["goal_markets"] else "",
+                "btts_yes": round(row["goal_markets"]["BTTS_YES"], 6) if "BTTS_YES" in row["goal_markets"] else "",
+                "btts_no": round(row["goal_markets"]["BTTS_NO"], 6) if "BTTS_NO" in row["goal_markets"] else ""})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "16 total: per team overall_form[points,gf,ga,gd] + relevant_venue_form[points,gf,ga,gd]; venue_form falls back to overall when fewer than 2 venue matches",
