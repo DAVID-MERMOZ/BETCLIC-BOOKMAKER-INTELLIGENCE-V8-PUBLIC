@@ -18,9 +18,16 @@ def initialize_database():
                 match_name TEXT,
                 match_date TEXT,
                 sport TEXT,
-                is_live INTEGER
+                is_live INTEGER,
+                competition_name TEXT
             )
         """)
+        # Migration idempotente pour les bases historiques déjà existantes.
+        match_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(matches)").fetchall()
+        }
+        if "competition_name" not in match_columns:
+            conn.execute("ALTER TABLE matches ADD COLUMN competition_name TEXT")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS odds_history (
@@ -73,14 +80,18 @@ def initialize_database():
 def save_match(match):
     with connect() as conn:
         conn.execute("""
-            INSERT OR REPLACE INTO matches
-            VALUES (?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO matches (
+                match_id, match_name, match_date, sport, is_live, competition_name
+            ) VALUES (?, ?, ?, ?, ?, ?)
         """, (
             str(match.id),
             match.name,
             str(match.date),
             "football",
-            int(bool(match.is_live))
+            int(bool(match.is_live)),
+            (getattr(match, "competition", None)
+             or getattr(match, "competition_name", None)
+             or None)
         ))
 
 
