@@ -35,3 +35,8 @@ Le lancement opérationnel expérimental est autorisé à partir de 30 matchs un
 ## Artefacts
 
 Les rapports CSV et le modèle expérimental sont publiés comme artefacts GitHub Actions pendant 30 jours. La base SQLite est sauvegardée dans le dépôt privé via la release `betclic-db-latest`.
+
+
+## Marchés buts expérimentaux (Over/Under et BTTS)
+
+Le rapport de prédictions inclut aussi Over/Under 1.5, 2.5 et 3.5 ainsi que BTTS Oui/Non. Ces probabilités proviennent d'une matrice de scores Poisson construite à partir des buts marqués/encaissés avant le coup d'envoi, avec séparation domicile/extérieur et rétrécissement vers la moyenne globale disponible. Il faut au moins trois matchs antérieurs pour chaque équipe et dix matchs antérieurs dans le corpus pour produire une estimation. Sinon, les champs restent vides avec un statut explicite NO_BET. Les sorties sont marquées EXPERIMENTAL_NOT_VALIDATED : elles ne sont ni calibrées, ni comparées à des cotes de marché, et ne constituent pas des recommandations de pari. Les marchés buts doivent être évalués séparément sur des résultats confirmés.
