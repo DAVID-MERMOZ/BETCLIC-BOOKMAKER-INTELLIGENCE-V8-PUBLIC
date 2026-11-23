@@ -124,6 +124,9 @@ jobs:
       - name: Evaluer le modele independant de forme des equipes
         run: python team_form_model_experiment.py
 
+      - name: Generer le tableau quotidien unique pour Telegram
+        run: python daily_fixture_sample.py
+
       - name: Archiver les predictions et evaluer les resultats confirmes
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -135,6 +138,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PREDICTIONS_FILE: reports/todays_sample_predictions.csv
         run: python telegram_notify.py
 
       - name: Generer le rapport de rapprochement (lecture seule)
