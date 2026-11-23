@@ -102,7 +102,7 @@ def build_message(rows, run_url=""):
         if row.get("over_2_5") not in (None, ""):
             lines.append(
                 f"Buts : Over 1,5 {_pct(row.get('over_1_5'))} | "
-                f"Over 2,5 {_pct(row.get('over_2_5'))} | "
+                f"Over 2,5 : {_pct(row.get('over_2_5'))} | "
                 f"Over 3,5 {_pct(row.get('over_3_5'))} | "
                 f"BTTS Oui {_pct(row.get('btts_yes'))}"
             )
