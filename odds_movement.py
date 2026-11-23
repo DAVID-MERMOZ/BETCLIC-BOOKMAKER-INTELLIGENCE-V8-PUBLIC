@@ -5,7 +5,7 @@ composition, meteo, information interne) ne sont jamais deduites des seules cote
 """
 from collections import defaultdict
 
-from baseline_market_evaluation import CLASSES, classify_selection, fair_probs, parse_utc
+from baseline_market_evaluation import CLASSES, classify_selection, fair_probs, parse_utc, split_teams
 
 
 def summarize_1x2_movement(odds_rows, match_name, cutoff):
@@ -24,9 +24,8 @@ def summarize_1x2_movement(odds_rows, match_name, cutoff):
             continue
         if price <= 1:
             continue
-        outcome = classify_selection(selection, *(__import__(
-            "baseline_market_evaluation"
-        ).split_teams(match_name)))
+        home, away = split_teams(match_name)
+        outcome = classify_selection(selection, home, away)
         if outcome in CLASSES:
             snapshots[stamp][outcome] = price
 
