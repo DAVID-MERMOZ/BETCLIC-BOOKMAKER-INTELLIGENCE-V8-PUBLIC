@@ -143,8 +143,17 @@ def send_telegram(message, token, chat_id, opener=urlopen):
     try:
         with opener(request, timeout=20) as response:
             result = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError) as exc:
-        raise RuntimeError(f"Échec de l'envoi Telegram ({type(exc).__name__}).") from None
+    except HTTPError as exc:
+        # Keep diagnostics useful without exposing the bot token or request URL.
+        try:
+            detail = json.loads(exc.read().decode("utf-8")).get("description", "")
+        except (ValueError, UnicodeDecodeError):
+            detail = ""
+        detail = str(detail)[:300]
+        suffix = f" — {detail}" if detail else ""
+        raise RuntimeError(f"Échec Telegram HTTP {exc.code}{suffix}.") from None
+    except (URLError, TimeoutError) as exc:
+        raise RuntimeError(f"Échec de connexion Telegram ({type(exc).__name__}).") from None
     if not result.get("ok"):
         raise RuntimeError("Telegram a refusé le message.")
     return True
