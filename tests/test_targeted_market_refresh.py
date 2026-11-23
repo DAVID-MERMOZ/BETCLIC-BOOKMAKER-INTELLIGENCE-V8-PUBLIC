@@ -72,5 +72,31 @@ class TargetedMarketRefreshTests(unittest.TestCase):
         self.assertEqual(rows[0]["targeted_refresh_status"], "INCOMPLETE")
 
 
+    def test_excludes_quotes_collected_after_kickoff(self):
+        with sqlite3.connect(self.db) as conn:
+            conn.execute("UPDATE odds_history SET collected_at='2026-11-24T18:01:00+00:00'")
+        rows = build_targeted_refresh(
+            self.db, self.changes, self.predictions,
+            datetime(2026, 11, 24, 17, tzinfo=timezone.utc),
+        )
+        self.assertEqual(rows[0]["targeted_refresh_status"], "INCOMPLETE")
+
+    def test_rejects_match_already_started(self):
+        rows = build_targeted_refresh(
+            self.db, self.changes, self.predictions,
+            datetime(2026, 11, 24, 18, tzinfo=timezone.utc),
+        )
+        self.assertEqual(rows[0]["market_status"], "MATCH_NOT_ELIGIBLE_PREMATCH")
+        self.assertEqual(rows[0]["targeted_refresh_status"], "INCOMPLETE")
+
+    def test_rejects_live_match(self):
+        with sqlite3.connect(self.db) as conn:
+            conn.execute("UPDATE matches SET is_live=1 WHERE match_id='m1'")
+        rows = build_targeted_refresh(
+            self.db, self.changes, self.predictions,
+            datetime(2026, 11, 23, 12, tzinfo=timezone.utc),
+        )
+        self.assertEqual(rows[0]["market_status"], "MATCH_NOT_ELIGIBLE_PREMATCH")
+
 if __name__ == "__main__":
     unittest.main()
