@@ -19,11 +19,10 @@ DB_PATH = Path("data/betclic_history.db")
 CHANGES_PATH = Path("reports/changes_to_refresh.csv")
 PREDICTIONS_PATH = Path("reports/team_form_predictions.csv")
 OUTPUT_PATH = Path("reports/targeted_market_refresh.csv")
-MARKET = "Résultat du match (t. rég)"
 CLASSES = ("HOME", "DRAW", "AWAY")
 FIELDS = [
     "match_id", "match_name", "kickoff_utc", "refresh_checked_at_utc",
-    "market_status", "market_snapshot_utc", "market_prob_home",
+    "market_name", "market_status", "market_snapshot_utc", "market_prob_home",
     "market_prob_draw", "market_prob_away", "model_status",
     "model_probabilities_status", "targeted_refresh_status",
     "reason",
@@ -108,6 +107,10 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
     with changes_path.open(encoding="utf-8", newline="") as handle:
         change_rows = list(csv.DictReader(handle))
     affected = {str(row["match_id"]) for row in change_rows if row.get("match_id")}
+    changed_markets = defaultdict(set)
+    for row in change_rows:
+        if row.get("match_id") and row.get("market_name"):
+            changed_markets[str(row["match_id"])].add(row["market_name"])
     with predictions_path.open(encoding="utf-8", newline="") as handle:
         prediction_rows = {str(row["match_id"]): row for row in csv.DictReader(handle)}
 
@@ -125,14 +128,17 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
                 "SELECT COALESCE(is_live, 0) FROM matches WHERE match_id=?",
                 (str(match_id),),
             ).fetchone()
-            odds_rows = conn.execute(
-                """SELECT selection_name, odds, suspended, collected_at
-                   FROM odds_history
-                   WHERE match_id=? AND market_name=?
-                   ORDER BY collected_at""",
-                (str(match_id), MARKET),
-            ).fetchall()
-            rows_by_id[str(match_id)] = (name, kickoff, odds_rows, bool(live_row and live_row[0]))
+            market_rows = {}
+            for market_name in sorted(changed_markets.get(str(match_id), set())):
+                odds_rows = conn.execute(
+                    """SELECT selection_name, odds, suspended, collected_at
+                       FROM odds_history
+                       WHERE match_id=? AND market_name=?
+                       ORDER BY collected_at""",
+                    (str(match_id), market_name),
+                ).fetchall()
+                market_rows[market_name] = odds_rows
+            rows_by_id[str(match_id)] = (name, kickoff, market_rows, bool(live_row and live_row[0]))
 
     output = []
     for match_id in sorted(affected):
@@ -143,7 +149,7 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
                 "match_id": match_id, "match_name": prior.get("match_name", ""),
                 "kickoff_utc": prior.get("kickoff_utc", ""),
                 "refresh_checked_at_utc": checked_at,
-                "market_status": "MATCH_NOT_FOUND_IN_DB", "market_snapshot_utc": "",
+                "market_name": "", "market_status": "MATCH_NOT_FOUND_IN_DB", "market_snapshot_utc": "",
                 "market_prob_home": "", "market_prob_draw": "", "market_prob_away": "",
                 "model_status": prior.get("model_status", "UNKNOWN"),
                 "model_probabilities_status": "UNCHANGED_NOT_RECALCULATED",
@@ -151,13 +157,13 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
                 "reason": "Match absent de la base ou ID non reconnu.",
             })
             continue
-        name, kickoff, odds_rows, is_live = match_data
+        name, kickoff, market_rows, is_live = match_data
         kickoff_dt = parse_utc(kickoff)
         if is_live or kickoff_dt is None or kickoff_dt <= now.astimezone(timezone.utc):
             output.append({
                 "match_id": match_id, "match_name": name, "kickoff_utc": kickoff,
                 "refresh_checked_at_utc": checked_at,
-                "market_status": "MATCH_NOT_ELIGIBLE_PREMATCH", "market_snapshot_utc": "",
+                "market_name": "", "market_status": "MATCH_NOT_ELIGIBLE_PREMATCH", "market_snapshot_utc": "",
                 "market_prob_home": "", "market_prob_draw": "", "market_prob_away": "",
                 "model_status": prior.get("model_status", "UNKNOWN"),
                 "model_probabilities_status": "UNCHANGED_NOT_RECALCULATED",
@@ -165,7 +171,12 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
                 "reason": "Match deja commence, en direct, ou date de coup d'envoi invalide.",
             })
             continue
-        snapshot = latest_market_snapshot(odds_rows, name, kickoff, now)
+        candidate_snapshots = []
+        for market_name, odds_rows in market_rows.items():
+            candidate = latest_market_snapshot(odds_rows, name, kickoff, now)
+            if candidate:
+                candidate_snapshots.append((candidate[0], market_name, candidate[1]))
+        snapshot = max(candidate_snapshots, key=lambda item: item[0]) if candidate_snapshots else None
         common = {
             "match_id": match_id, "match_name": name, "kickoff_utc": kickoff,
             "refresh_checked_at_utc": checked_at,
@@ -174,16 +185,16 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
         }
         if snapshot is None:
             output.append({
-                **common, "market_status": "NO_COMPLETE_1X2_SNAPSHOT",
+                **common, "market_name": "", "market_status": "NO_COMPLETE_1X2_SNAPSHOT",
                 "market_snapshot_utc": "", "market_prob_home": "",
                 "market_prob_draw": "", "market_prob_away": "",
                 "targeted_refresh_status": "INCOMPLETE",
                 "reason": "Aucun snapshot 1X2 complet exploitable apres changement.",
             })
         else:
-            stamp, probs = snapshot
+            stamp, market_name, probs = snapshot
             output.append({
-                **common, "market_status": "UPDATED_FROM_LATEST_DB_SNAPSHOT",
+                **common, "market_name": market_name, "market_status": "UPDATED_FROM_LATEST_DB_SNAPSHOT",
                 "market_snapshot_utc": stamp,
                 "market_prob_home": round(probs["HOME"], 6),
                 "market_prob_draw": round(probs["DRAW"], 6),
