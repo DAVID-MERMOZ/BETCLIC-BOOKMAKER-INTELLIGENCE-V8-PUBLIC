@@ -66,7 +66,7 @@ def parse_utc(value):
         return None
 
 
-def latest_market_snapshot(rows, match_name, kickoff, now):
+def latest_market_snapshot(rows, match_name, kickoff, now, not_before=None):
     home, away = split_teams(match_name)
     if not home or not away:
         return None
@@ -78,6 +78,9 @@ def latest_market_snapshot(rows, match_name, kickoff, now):
     for selection, odds, suspended, stamp in rows:
         stamp_dt = parse_utc(stamp)
         if stamp_dt is None or stamp_dt > kickoff_dt or stamp_dt > now_dt:
+            continue
+        # Ne jamais presenter un ancien snapshot comme une actualisation du changement.
+        if not_before is not None and stamp_dt < not_before:
             continue
         if suspended:
             continue
@@ -108,9 +111,14 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
         change_rows = list(csv.DictReader(handle))
     affected = {str(row["match_id"]) for row in change_rows if row.get("match_id")}
     changed_markets = defaultdict(set)
+    changed_after = {}
     for row in change_rows:
         if row.get("match_id") and row.get("market_name"):
-            changed_markets[str(row["match_id"])].add(row["market_name"])
+            key = (str(row["match_id"]), row["market_name"])
+            changed_markets[key[0]].add(key[1])
+            changed_at = parse_utc(row.get("latest_snapshot_at"))
+            if changed_at is not None and (key not in changed_after or changed_at > changed_after[key]):
+                changed_after[key] = changed_at
     with predictions_path.open(encoding="utf-8", newline="") as handle:
         prediction_rows = {str(row["match_id"]): row for row in csv.DictReader(handle)}
 
@@ -173,7 +181,10 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
             continue
         candidate_snapshots = []
         for market_name, odds_rows in market_rows.items():
-            candidate = latest_market_snapshot(odds_rows, name, kickoff, now)
+            candidate = latest_market_snapshot(
+                odds_rows, name, kickoff, now,
+                not_before=changed_after.get((str(match_id), market_name)),
+            )
             if candidate:
                 candidate_snapshots.append((candidate[0], market_name, candidate[1]))
         snapshot = max(candidate_snapshots, key=lambda item: item[0]) if candidate_snapshots else None
