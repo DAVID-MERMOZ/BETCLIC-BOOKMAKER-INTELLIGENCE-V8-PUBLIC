@@ -279,8 +279,14 @@ def build_upcoming_dataset(db_path=DB_PATH):
     now = datetime.now(timezone.utc)
     with sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True) as conn:
         history = load_history(conn)
-        fixtures = conn.execute("""
-            SELECT match_id, match_name, match_date, competition_name
+        # Les anciennes bases Betclic ne possedent pas toutes la colonne
+        # competition_name. Detecter le schema evite de bloquer toute prediction.
+        match_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(matches)").fetchall()
+        }
+        competition_expr = "competition_name" if "competition_name" in match_columns else "NULL"
+        fixtures = conn.execute(f"""
+            SELECT match_id, match_name, match_date, {competition_expr}
             FROM matches
             WHERE sport='football' AND COALESCE(is_live, 0)=0
         """).fetchall()
