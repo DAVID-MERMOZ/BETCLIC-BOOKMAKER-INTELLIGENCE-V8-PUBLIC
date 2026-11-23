@@ -322,7 +322,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
         market = latest_complete_1x2_snapshot(match_odds, name, now)
         market_movement = summarize_1x2_movement(match_odds, name, now)
         web_research = research_match_news(
-            name, market_movement.get("odds_change_pct", {})
+            name, market_movement.get("max_step_odds_change_pct", market_movement.get("odds_change_pct", {}))
         ) if market_movement.get("status") == "MOVEMENT_MEASURED" else {
             "status": "NOT_TRIGGERED", "triggered_moves": {}, "items": []
         }
