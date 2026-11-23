@@ -26,6 +26,7 @@ TEXT_FIELDS = (
     "market_status", "comparison_status", "model_status",
     "history_quality", "goal_model_status",
     "market_movement_status", "market_movement_pattern",
+    "web_research_status", "web_research_findings_json",
 )
 
 
@@ -122,7 +123,7 @@ def save_state(state, path=STATE_PATH, commit_to_git=None):
             subprocess.run(["git", "config", "user.email",
                             "41898282+github-actions[bot]@users.noreply.github.com"],
                            check=True, capture_output=True, text=True)
-            subprocess.run(["git", "add", "--", relative_path],
+            subprocess.run(["git", "add", "-f", "--", relative_path],
                            check=True, capture_output=True, text=True)
             staged = subprocess.run(["git", "diff", "--cached", "--quiet"],
                                     capture_output=True, text=True)
