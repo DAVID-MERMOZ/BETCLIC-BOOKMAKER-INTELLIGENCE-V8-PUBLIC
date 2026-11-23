@@ -8,6 +8,8 @@ on:
       - "database.py"
       - "betclic_probe.py"
       - "daily_fixture_sample.py"
+      - "telegram_notify.py"
+      - "tests/test_telegram_notify.py"
       - "baseline_market_evaluation.py"
       - "tests/**"
       - "dashboard.py"
@@ -69,6 +71,14 @@ jobs:
 
       - name: Generer les predictions echantillon des matchs du jour
         run: python daily_fixture_sample.py
+
+      - name: Notifier le nouvel echantillon de predictions sur Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PREDICTIONS_FILE: reports/todays_sample_predictions.csv
+          GITHUB_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python telegram_notify.py
 
       - name: Publier le modele et le rapport du pilote
         if: always() && (hashFiles('reports/*.csv') != '' || hashFiles('artifacts/*.joblib') != '')
