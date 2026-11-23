@@ -1,5 +1,6 @@
 """Modele de forme des equipes: validation chronologique walk-forward."""
 import csv
+import json
 import sqlite3
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from baseline_market_evaluation import (
 from match_results_report import norm as canonical_team_norm, squad_profile, split_teams
 from goal_markets import predict_goal_markets
 from odds_movement import summarize_1x2_movement
+from odds_news_research import research_match_news
 
 
 def team_key(name):
@@ -319,13 +321,19 @@ def build_upcoming_dataset(db_path=DB_PATH):
         match_odds = odds_by_match.get(str(match_id), [])
         market = latest_complete_1x2_snapshot(match_odds, name, now)
         market_movement = summarize_1x2_movement(match_odds, name, now)
+        web_research = research_match_news(
+            name, market_movement.get("odds_change_pct", {})
+        ) if market_movement.get("status") == "MOVEMENT_MEASURED" else {
+            "status": "NOT_TRIGGERED", "triggered_moves": {}, "items": []
+        }
         upcoming.append({"match_id": str(match_id), "match_name": name,
 "kickoff": kickoff, "features": (team_form_features(history, home, kickoff, "HOME", minimum_matches=1) + team_form_features(history, away, kickoff, "AWAY", minimum_matches=1)),
                          "form_matches_home": home_n, "form_matches_away": away_n,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
                                             else "LOW_HISTORY_EXPERIMENTAL",
                          "market_snapshot": market,
-                         "market_movement": market_movement})
+                         "market_movement": market_movement,
+                         "web_research": web_research})
     upcoming.sort(key=lambda r: r["kickoff"])
     return upcoming, dict(rejected)
 
@@ -387,7 +395,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             "form_matches_home", "form_matches_away", "history_quality",
             "market_status", "market_snapshot_utc", "market_prob_home",
             "market_prob_draw", "market_prob_away", "edge_home_pp",
-            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status", "action_status", "goal_model_status", "lambda_home", "lambda_away", "goal_history_home_n", "goal_history_away_n", "over_1_5", "under_1_5", "over_2_5", "under_2_5", "over_3_5", "under_3_5", "btts_yes", "btts_no", "market_movement_status", "market_movement_pattern", "movement_cause_status", "movement_snapshots_n", "movement_opening_at", "movement_latest_at", "movement_delta_home_pp", "movement_delta_draw_pp", "movement_delta_away_pp"])
+            "edge_draw_pp", "edge_away_pp", "max_abs_edge_pp", "comparison_status", "action_status", "goal_model_status", "lambda_home", "lambda_away", "goal_history_home_n", "goal_history_away_n", "over_1_5", "under_1_5", "over_2_5", "under_2_5", "over_3_5", "under_3_5", "btts_yes", "btts_no", "market_movement_status", "market_movement_pattern", "movement_cause_status", "movement_snapshots_n", "movement_opening_at", "movement_latest_at", "movement_delta_home_pp", "movement_delta_draw_pp", "movement_delta_away_pp", "web_research_status", "web_research_triggered_moves", "web_research_checked_at_utc", "web_research_findings_json"])
         writer.writeheader()
         for row in predictions:
             writer.writerow({
@@ -446,7 +454,11 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                 "movement_latest_at": row["market_movement"].get("latest_at", ""),
                 "movement_delta_home_pp": round(row["market_movement"]["probability_delta_pp"]["HOME"], 3) if "probability_delta_pp" in row["market_movement"] else "",
                 "movement_delta_draw_pp": round(row["market_movement"]["probability_delta_pp"]["DRAW"], 3) if "probability_delta_pp" in row["market_movement"] else "",
-                "movement_delta_away_pp": round(row["market_movement"]["probability_delta_pp"]["AWAY"], 3) if "probability_delta_pp" in row["market_movement"] else ""})
+                "movement_delta_away_pp": round(row["market_movement"]["probability_delta_pp"]["AWAY"], 3) if "probability_delta_pp" in row["market_movement"] else "",
+                "web_research_status": row["web_research"].get("status", ""),
+                "web_research_triggered_moves": json.dumps(row["web_research"].get("triggered_moves", {}), ensure_ascii=False),
+                "web_research_checked_at_utc": row["web_research"].get("checked_at_utc", ""),
+                "web_research_findings_json": json.dumps(row["web_research"].get("items", []), ensure_ascii=False)})
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "16 total: per team overall_form[points,gf,ga,gd] + relevant_venue_form[points,gf,ga,gd]; venue_form falls back to overall when fewer than 2 venue matches",
