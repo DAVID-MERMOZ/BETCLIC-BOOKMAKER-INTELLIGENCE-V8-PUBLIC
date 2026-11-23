@@ -13,7 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-PREDICTIONS_PATH = Path("reports/team_form_predictions.csv")
+PREDICTIONS_PATH = Path(os.getenv("PREDICTIONS_FILE", "reports/team_form_predictions.csv"))
 OUTCOMES = {"HOME": "1", "DRAW": "N", "AWAY": "2"}
 LOCAL_TIMEZONE = "Africa/Douala"
 
@@ -82,7 +82,7 @@ def build_message(rows, run_url=""):
     for row in rows[:12]:
         competition = html.escape(row.get("competition_name") or "Championnat non renseigné")
         name = html.escape(row.get("match_name") or "Match sans nom")
-        prediction = row.get("prediction", "")
+        prediction = row.get("prediction") or row.get("prediction_1x2", "")
         action = row.get("action_status", "NO_BET")
         probs = " / ".join(
             f"{label} {_pct(row.get(field))}"
