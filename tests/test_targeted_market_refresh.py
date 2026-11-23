@@ -36,9 +36,9 @@ class TargetedMarketRefreshTests(unittest.TestCase):
                 ],
             )
         with self.changes.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=["match_id", "market_name"])
+            writer = csv.DictWriter(handle, fieldnames=["match_id", "market_name", "latest_snapshot_at"])
             writer.writeheader()
-            writer.writerow({"match_id": "m1", "market_name": "Résultat du match (t. rég)"})
+            writer.writerow({"match_id": "m1", "market_name": "Résultat du match (t. rég)", "latest_snapshot_at": "2026-11-23T11:00:00+00:00"})
         with self.predictions.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=["match_id", "match_name", "model_status"])
             writer.writeheader()
@@ -97,6 +97,23 @@ class TargetedMarketRefreshTests(unittest.TestCase):
             datetime(2026, 11, 23, 12, tzinfo=timezone.utc),
         )
         self.assertEqual(rows[0]["market_status"], "MATCH_NOT_ELIGIBLE_PREMATCH")
+
+
+    def test_does_not_reuse_snapshot_older_than_detected_change(self):
+        with self.changes.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=["match_id", "market_name", "latest_snapshot_at"])
+            writer.writeheader()
+            writer.writerow({
+                "match_id": "m1",
+                "market_name": "Résultat du match (t. rég)",
+                "latest_snapshot_at": "2026-11-23T11:30:00+00:00",
+            })
+        rows = build_targeted_refresh(
+            self.db, self.changes, self.predictions,
+            datetime(2026, 11, 23, 12, tzinfo=timezone.utc),
+        )
+        self.assertEqual(rows[0]["targeted_refresh_status"], "INCOMPLETE")
+        self.assertEqual(rows[0]["market_status"], "NO_COMPLETE_1X2_SNAPSHOT")
 
 if __name__ == "__main__":
     unittest.main()
