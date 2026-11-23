@@ -47,7 +47,7 @@
           "market_status": "AVAILABLE",
           "match_key": "1271904014995456",
           "match_name": "RB Leipzig - RC Lens",
-          "max_abs_edge_pp": 67.4,
+          "max_abs_edge_pp": 68.0,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.95,
           "over_2_5": 0.852,
@@ -68,7 +68,7 @@
           "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "history_quality": "STANDARD_3_PLUS",
           "kickoff_utc": "2026-11-24T17:45:00+00:00",
-          "market_movement_pattern": "REPRICING_SELECTION_CIBLEE",
+          "market_movement_pattern": "REPRICING_MULTI_SELECTION",
           "market_movement_status": "MOVEMENT_MEASURED",
           "market_prob_away": null,
           "market_prob_draw": null,
@@ -76,7 +76,7 @@
           "market_status": "AVAILABLE",
           "match_key": "1271904160731136",
           "match_name": "Bodø/Glimt - LASK Linz",
-          "max_abs_edge_pp": 32.6,
+          "max_abs_edge_pp": 33.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.766,
           "over_2_5": 0.526,
@@ -155,7 +155,7 @@
           "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "history_quality": "STANDARD_3_PLUS",
           "kickoff_utc": "2026-11-24T17:45:00+00:00",
-          "market_movement_pattern": "NO_SIGNIFICANT_1PP_PROBABILITY_SHIFT",
+          "market_movement_pattern": "REPRICING_MULTI_SELECTION",
           "market_movement_status": "MOVEMENT_MEASURED",
           "market_prob_away": null,
           "market_prob_draw": null,
@@ -163,7 +163,7 @@
           "market_status": "AVAILABLE",
           "match_key": "1271904379887616",
           "match_name": "Galatasaray - Aston Villa",
-          "max_abs_edge_pp": 2.9,
+          "max_abs_edge_pp": 2.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.851,
           "over_2_5": 0.657,
@@ -844,8 +844,8 @@
           "web_research_status": "NOT_TRIGGERED"
         }
       ],
-      "sent_at_utc": "2026-11-23T22:30:38.252825+00:00",
-      "signature": "55cd13c760a09381daf9f5491a300182bf7bec294a1b0acffe7c498d944cb21c"
+      "sent_at_utc": "2026-11-23T23:29:37.851450+00:00",
+      "signature": "88839bebf5b91c3e0b7e7575c86dd6696e9c9ddc32f31a01ed90ec2cfdc87bf3"
     }
   },
   "version": 1
