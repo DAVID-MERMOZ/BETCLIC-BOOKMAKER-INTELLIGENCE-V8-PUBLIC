@@ -75,33 +75,35 @@ def _news_lines(row):
 
 
 def build_message(rows, run_url="", revision=False):
+    """Build a valid Telegram HTML document without cutting through markup."""
     heading = "BETCLIC V8.1 — MISE À JOUR DES PRÉDICTIONS" if revision else "BETCLIC V8.1 — Collecte et prédictions"
-    lines = [f"<b>{heading}</b>"]
-    lines.append(f"Matchs avec prédiction : <b>{len(rows)}</b>")
-    if not rows:
-        lines.append("Aucune prédiction exploitable pour cette collecte. Vérifier la disponibilité des matchs et des données.")
-    for row in rows[:12]:
-        competition = html.escape(row.get("competition_name") or "Championnat non renseigné")
-        name = html.escape(row.get("match_name") or "Match sans nom")
+    header = [f"<b>{heading}</b>", f"Matchs avec prédiction : <b>{len(rows)}</b>"]
+    footer = ["", "<i>Modèle expérimental : probabilités non garanties. NO BET si données insuffisantes ou modèle non validé.</i>"]
+    if run_url:
+        footer.insert(0, f'<a href="{html.escape(run_url, quote=True)}">Ouvrir le rapport complet GitHub Actions</a>')
+    blocks = []
+    for row in rows:
+        competition = html.escape(str(row.get("competition_name") or "Championnat non renseigné")[:180])
+        name = html.escape(str(row.get("match_name") or "Match sans nom")[:220])
         prediction = row.get("prediction") or row.get("prediction_1x2", "")
         action = row.get("action_status", "NO_BET")
         probs = " / ".join(
             f"{label} {_pct(row.get(field))}"
             for label, field in (("1", "prob_home"), ("N", "prob_draw"), ("2", "prob_away"))
         )
-        lines.extend([
+        block = [
             "",
             f"<b>Championnat : {competition}</b>",
             html.escape(format_kickoff(row.get("kickoff_utc"))),
             f"<b>{name}</b>",
-            f"Pronostic modèle : <b>{OUTCOMES.get(prediction, html.escape(prediction or 'n/d'))}</b>",
+            f"Pronostic modèle : <b>{OUTCOMES.get(prediction, html.escape(str(prediction or 'n/d')))}</b>",
             f"Probabilités modèle (1/N/2) : {probs}",
             _market_summary(row),
             f"Écart maximal modèle/marché : {_pct(float(row['max_abs_edge_pp']) / 100) if row.get('max_abs_edge_pp') not in (None, '') else 'n/d'}",
-            f"Décision : <b>{html.escape(action)}</b>",
-        ])
+            f"Décision : <b>{html.escape(str(action)[:120])}</b>",
+        ]
         if row.get("over_2_5") not in (None, ""):
-            lines.append(
+            block.append(
                 f"Buts : Over 1,5 {_pct(row.get('over_1_5'))} | "
                 f"Over 2,5 : {_pct(row.get('over_2_5'))} | "
                 f"Over 3,5 {_pct(row.get('over_3_5'))} | "
@@ -109,21 +111,34 @@ def build_message(rows, run_url="", revision=False):
             )
         movement = row.get("market_movement_status")
         if movement and movement != "NO_DATA":
-            pattern = html.escape(row.get("market_movement_pattern") or "profil non précisé")
-            lines.append(f"Mouvement des cotes : {html.escape(movement)} — {pattern}")
+            pattern = html.escape(str(row.get("market_movement_pattern") or "profil non précisé")[:160])
+            block.append(f"Mouvement des cotes : {html.escape(str(movement)[:100])} — {pattern}")
         research = row.get("web_research_status")
         if research and research != "NOT_TRIGGERED":
-            lines.append(f"Recherche actualités : {html.escape(research)}")
-            lines.extend(_news_lines(row))
-    if len(rows) > 12:
-        lines.append(f"… et {len(rows) - 12} autre(s) match(s) dans le rapport.")
-    if run_url:
-        lines.extend(["", f'<a href="{html.escape(run_url, quote=True)}">Ouvrir le rapport complet GitHub Actions</a>'])
-    lines.append("")
-    lines.append("<i>Modèle expérimental : probabilités non garanties. NO BET si données insuffisantes ou modèle non validé.</i>")
-    message = "\n".join(lines)
-    return message[:3900]
+            block.append(f"Recherche actualités : {html.escape(str(research)[:100])}")
+            block.extend(_news_lines(row))
+        blocks.append("\n".join(block))
 
+    # Telegram's message limit is 4096 characters. Include only complete fixture
+    # blocks so a long report can never be cut in the middle of an HTML tag.
+    selected = list(header)
+    omitted = 0
+    for index, block in enumerate(blocks):
+        candidate = "\n".join(selected + [block] + footer)
+        if len(candidate) <= 3900:
+            selected.append(block)
+        else:
+            omitted = len(blocks) - index
+            break
+    if not rows:
+        selected.append("Aucune prédiction exploitable pour cette collecte. Vérifier la disponibilité des matchs et des données.")
+    if omitted:
+        selected.append(f"… {omitted} match(s) omis du message pour respecter la limite Telegram; consulter le rapport complet.")
+    message = "\n".join(selected + footer)
+    if len(message) > 4096:
+        # Defensive fallback: header/footer are static and always remain intact.
+        raise RuntimeError("Message Telegram trop long après troncature sécurisée.")
+    return message
 
 def read_predictions(path=PREDICTIONS_PATH):
     if not Path(path).exists():
