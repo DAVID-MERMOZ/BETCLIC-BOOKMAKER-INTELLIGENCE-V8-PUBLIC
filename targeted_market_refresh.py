@@ -55,12 +55,31 @@ def outcome_for_selection(selection, home, away):
     return None
 
 
-def latest_market_snapshot(rows, match_name):
+def parse_utc(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def latest_market_snapshot(rows, match_name, kickoff, now):
     home, away = split_teams(match_name)
     if not home or not away:
         return None
+    kickoff_dt = parse_utc(kickoff)
+    now_dt = now.astimezone(timezone.utc)
+    if kickoff_dt is None or kickoff_dt <= now_dt:
+        return None
     snapshots = defaultdict(dict)
     for selection, odds, suspended, stamp in rows:
+        stamp_dt = parse_utc(stamp)
+        if stamp_dt is None or stamp_dt > kickoff_dt or stamp_dt > now_dt:
+            continue
         if suspended:
             continue
         try:
@@ -102,14 +121,18 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
         ).fetchall()
         rows_by_id = defaultdict(list)
         for match_id, name, kickoff in matches:
+            live_row = conn.execute(
+                "SELECT COALESCE(is_live, 0) FROM matches WHERE match_id=?",
+                (str(match_id),),
+            ).fetchone()
             odds_rows = conn.execute(
                 """SELECT selection_name, odds, suspended, collected_at
                    FROM odds_history
                    WHERE match_id=? AND market_name=?
-                   ORDER BY collected_at, id""",
+                   ORDER BY collected_at""",
                 (str(match_id), MARKET),
             ).fetchall()
-            rows_by_id[str(match_id)] = (name, kickoff, odds_rows)
+            rows_by_id[str(match_id)] = (name, kickoff, odds_rows, bool(live_row and live_row[0]))
 
     output = []
     for match_id in sorted(affected):
@@ -128,8 +151,21 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
                 "reason": "Match absent de la base ou ID non reconnu.",
             })
             continue
-        name, kickoff, odds_rows = match_data
-        snapshot = latest_market_snapshot(odds_rows, name)
+        name, kickoff, odds_rows, is_live = match_data
+        kickoff_dt = parse_utc(kickoff)
+        if is_live or kickoff_dt is None or kickoff_dt <= now.astimezone(timezone.utc):
+            output.append({
+                "match_id": match_id, "match_name": name, "kickoff_utc": kickoff,
+                "refresh_checked_at_utc": checked_at,
+                "market_status": "MATCH_NOT_ELIGIBLE_PREMATCH", "market_snapshot_utc": "",
+                "market_prob_home": "", "market_prob_draw": "", "market_prob_away": "",
+                "model_status": prior.get("model_status", "UNKNOWN"),
+                "model_probabilities_status": "UNCHANGED_NOT_RECALCULATED",
+                "targeted_refresh_status": "INCOMPLETE",
+                "reason": "Match deja commence, en direct, ou date de coup d'envoi invalide.",
+            })
+            continue
+        snapshot = latest_market_snapshot(odds_rows, name, kickoff, now)
         common = {
             "match_id": match_id, "match_name": name, "kickoff_utc": kickoff,
             "refresh_checked_at_utc": checked_at,
