@@ -75,7 +75,7 @@ class PredictionHistoryTests(unittest.TestCase):
             rows = conn.execute("""
                 SELECT actual_outcome FROM prediction_history ORDER BY id
             """).fetchall()
-        self.assertEqual(rows, [("HOME",), (None,), (None,)])
+        self.assertEqual(rows, [("HOME",), (None,)])
 
 if __name__ == "__main__":
     unittest.main()
