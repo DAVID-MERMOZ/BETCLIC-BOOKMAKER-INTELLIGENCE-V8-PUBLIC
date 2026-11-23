@@ -1,15 +1,18 @@
 """Recherche web declenchee par un mouvement de cote significatif.
 
 Les resultats sont des pistes documentaires horodatees, jamais une preuve causale.
-La recherche utilise le flux RSS Google News (aucune cle API requise).
+Les articles trop anciens ou sans date fiable sont exclus avant diffusion.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
+import re
 import xml.etree.ElementTree as ET
 
 ODDS_MOVE_WEB_SEARCH_THRESHOLD_PCT = 10.0
+MAX_NEWS_AGE_DAYS = 7
+MAX_NEWS_FUTURE_HOURS = 24
 GOOGLE_NEWS_RSS = "https://news.google.com/rss/search?q={query}&hl=fr&gl=FR&ceid=FR:fr"
 
 
@@ -26,10 +29,34 @@ def significant_odds_moves(odds_change_pct, threshold=ODDS_MOVE_WEB_SEARCH_THRES
     return found
 
 
+def filter_recent_news_items(items, now=None, max_age_days=MAX_NEWS_AGE_DAYS):
+    """Conserve uniquement les articles dates dans la fenetre recente."""
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    now = now.astimezone(timezone.utc)
+    oldest = now - timedelta(days=max_age_days)
+    newest = now + timedelta(hours=MAX_NEWS_FUTURE_HOURS)
+    recent = []
+    for item in items:
+        raw = item.get("published_at_utc")
+        try:
+            published = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if published.tzinfo is None:
+                continue
+            published = published.astimezone(timezone.utc)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if oldest <= published <= newest:
+            recent.append(item)
+    return recent
+
+
 def research_match_news(match_name, movements, timeout=12, max_items=5):
     """Cherche des articles recents associes au match et au mouvement observe."""
     triggered = significant_odds_moves(movements)
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at_dt = datetime.now(timezone.utc)
+    checked_at = checked_at_dt.isoformat()
     if not triggered:
         return {"status": "NOT_TRIGGERED", "triggered_moves": {},
                 "checked_at_utc": checked_at, "items": []}
@@ -58,14 +85,13 @@ def research_match_news(match_name, movements, timeout=12, max_items=5):
                 published_utc = parsedate_to_datetime(published).astimezone(timezone.utc).isoformat()
             except (TypeError, ValueError, OverflowError):
                 published_utc = ""
-            # Description from RSS may contain HTML; preserve a compact plain-text excerpt.
-            import re
             excerpt = re.sub(r"<[^>]+>", " ", description)
-            excerpt = re.sub(r"\s+", " ", excerpt).strip()[:500]
+            excerpt = re.sub(r"\\s+", " ", excerpt).strip()[:500]
             items.append({"title": title, "source": source, "url": link,
                           "published_at_utc": published_utc, "excerpt": excerpt})
+        items = filter_recent_news_items(items, now=checked_at_dt)
         return {
-            "status": "RESULTS_FOUND" if items else "NO_RESULTS_FOUND",
+            "status": "RESULTS_FOUND" if items else "NO_RECENT_RESULTS",
             "triggered_moves": triggered, "query": query,
             "checked_at_utc": checked_at, "items": items,
         }
