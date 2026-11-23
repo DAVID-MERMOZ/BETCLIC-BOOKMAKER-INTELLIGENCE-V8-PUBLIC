@@ -11,7 +11,9 @@ from baseline_market_evaluation import CLASSES, validate_probability_map
 from team_form_model_experiment import (
     DB_PATH, MODEL_PATH, build_team_dataset, build_upcoming_dataset,
     market_comparison_status, prediction_action_status,
+    load_history_from_db, split_team_keys,
 )
+from goal_markets import predict_goal_markets
 
 OUT = Path("reports/todays_sample_predictions.csv")
 
@@ -50,7 +52,11 @@ def main():
         vector = fixture["features"]
         probs = probabilities(model, vector)
         balanced = probabilities(balanced_model, vector) if balanced_model else None
+        history = load_history_from_db(DB_PATH)
+        home_key, away_key = split_team_keys(fixture["match_name"])
+        goals = predict_goal_markets(history, home_key, away_key, fixture["kickoff"])
         row = {
+            "competition_name": fixture.get("competition_name") or "Championnat non renseigné",
             "generated_at_utc": now.isoformat(),
             "match_id": fixture["match_id"],
             "match_name": fixture["match_name"],
@@ -83,6 +89,22 @@ def main():
                 market_comparison_status(probs,
                     fixture["market_snapshot"][2] if fixture.get("market_snapshot") else None),
                 payload.get("status", "EXPERIMENTAL")),
+            "goal_model_status": goals.get("status", "NOT_AVAILABLE"),
+            "lambda_home": goals.get("lambda_home", ""),
+            "lambda_away": goals.get("lambda_away", ""),
+            "goal_history_home_n": goals.get("home_history_n", ""),
+            "goal_history_away_n": goals.get("away_history_n", ""),
+            "over_1_5": goals.get("OVER_1_5", ""),
+            "under_1_5": goals.get("UNDER_1_5", ""),
+            "over_2_5": goals.get("OVER_2_5", ""),
+            "under_2_5": goals.get("UNDER_2_5", ""),
+            "over_3_5": goals.get("OVER_3_5", ""),
+            "under_3_5": goals.get("UNDER_3_5", ""),
+            "btts_yes": goals.get("BTTS_YES", ""),
+            "btts_no": goals.get("BTTS_NO", ""),
+            "market_movement_status": fixture.get("market_movement", {}).get("status", "NO_DATA"),
+            "market_movement_pattern": fixture.get("market_movement", {}).get("pattern", ""),
+            "web_research_status": fixture.get("web_research", {}).get("status", "NOT_TRIGGERED"),
             "feature_definition": payload.get("feature_definition", ""),
             "note": "Predictions exploratoires; probabilites normalisees, non calibrees; la variante class_weighted est diagnostique uniquement.",
         }
@@ -90,7 +112,7 @@ def main():
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fields = list(rows[0]) if rows else [
-        "generated_at_utc", "match_id", "match_name", "kickoff_utc",
+        "generated_at_utc", "match_id", "competition_name", "match_name", "kickoff_utc",
         "prediction_1x2", "prob_home", "prob_draw", "prob_away",
         "balanced_prediction", "balanced_prob_home", "balanced_prob_draw",
         "balanced_prob_away", "training_n", "training_classes",
@@ -98,7 +120,11 @@ def main():
         "probability_integrity_status", "balanced_probability_status",
         "history_quality", "form_matches_home",
         "form_matches_away", "market_status", "max_abs_edge_pp", "comparison_status",
-        "action_status", "feature_definition", "note",
+        "action_status", "goal_model_status", "lambda_home", "lambda_away",
+        "goal_history_home_n", "goal_history_away_n", "over_1_5", "under_1_5",
+        "over_2_5", "under_2_5", "over_3_5", "under_3_5", "btts_yes", "btts_no",
+        "market_movement_status", "market_movement_pattern",
+        "web_research_status", "feature_definition", "note",
     ]
     with OUT.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
