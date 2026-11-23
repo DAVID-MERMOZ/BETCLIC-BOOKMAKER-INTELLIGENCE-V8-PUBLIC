@@ -72,16 +72,22 @@ class SaveOddsDeduplicationTests(unittest.TestCase):
         self.assertEqual(row[0], "Ligue de test")
 
     def test_initialize_migrates_legacy_matches_table(self):
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                CREATE TABLE matches (
-                    match_id TEXT PRIMARY KEY, match_name TEXT,
-                    match_date TEXT, sport TEXT, is_live INTEGER
-                )
-            """)
-        database.initialize_database()
-        with sqlite3.connect(self.db_path) as conn:
-            columns = {row[1] for row in conn.execute("PRAGMA table_info(matches)")}
+        # Utiliser un fichier SQLite distinct : setUp() a deja initialise
+        # self.db_path avec le schema courant.
+        legacy_db_path = Path(self.temp_dir.name) / "legacy.db"
+        with patch.object(database, "DB_PATH", legacy_db_path):
+            with sqlite3.connect(legacy_db_path) as conn:
+                conn.execute("""
+                    CREATE TABLE matches (
+                        match_id TEXT PRIMARY KEY, match_name TEXT,
+                        match_date TEXT, sport TEXT, is_live INTEGER
+                    )
+                """)
+            database.initialize_database()
+            with sqlite3.connect(legacy_db_path) as conn:
+                columns = {
+                    row[1] for row in conn.execute("PRAGMA table_info(matches)")
+                }
         self.assertIn("competition_name", columns)
 
     def test_composite_lookup_index_is_created(self):
