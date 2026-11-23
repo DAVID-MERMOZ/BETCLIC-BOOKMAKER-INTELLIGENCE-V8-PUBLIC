@@ -75,6 +75,9 @@ class SaveOddsDeduplicationTests(unittest.TestCase):
         # Utiliser un fichier SQLite distinct : setUp() a deja initialise
         # self.db_path avec le schema courant.
         legacy_db_path = Path(self.temp_dir.name) / "legacy.db"
+        # Garantit un fichier vierge même si un test précédent ou un retry
+        # a laissé une base au même emplacement.
+        legacy_db_path.unlink(missing_ok=True)
         with patch.object(database, "DB_PATH", legacy_db_path):
             with sqlite3.connect(legacy_db_path) as conn:
                 conn.execute("""
