@@ -187,13 +187,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 1.69,
           "lambda_home": 1.4,
-          "market_prob_away": 0.447,
+          "market_prob_away": 0.455,
           "market_prob_draw": 0.252,
-          "market_prob_home": 0.3,
+          "market_prob_home": 0.294,
           "market_status": "AVAILABLE",
           "match_key": "1271904506773504",
           "match_name": "Feyenoord - FC Porto",
-          "max_abs_edge_pp": 23.0,
+          "max_abs_edge_pp": 22.3,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.814,
           "over_2_5": 0.596,
@@ -264,8 +264,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-24T11:28:20.949737+00:00",
-      "signature": "1fdd58117b0e5d17c13876cc8108d8f1444db8bbed3aec38db67257ef968a8e5"
+      "sent_at_utc": "2026-11-24T12:34:06.906190+00:00",
+      "signature": "e65f160e48a25e2e0e47c8f91940febfd6f7d03c48b793ffa5146d85bb4f3f0f"
     }
   },
   "version": 1
