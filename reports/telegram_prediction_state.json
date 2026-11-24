@@ -1,4 +1,11 @@
 {
+  "pending": {
+    "todays_sample_predictions.csv": {
+      "sent_parts": [],
+      "signature": "d67d6857ee2e71f1f1ccde08dcc41ec1802fa74ee97692e49fc8846815776a60",
+      "total_parts": 2
+    }
+  },
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
