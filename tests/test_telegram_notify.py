@@ -238,5 +238,26 @@ class TelegramHybridDedupTests(unittest.TestCase):
         self.assertEqual(sender.call_count, 1)
 
 
+    def test_notification_workflows_share_serialized_concurrency_group(self):
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        workflow_paths = (
+            root / ".github" / "workflows" / "main.yml",
+            root / ".github" / "workflows" / "pilot-validation.yml",
+        )
+        configurations = []
+        for path in workflow_paths:
+            content = path.read_text(encoding="utf-8").splitlines()
+            group = next(line.split(":", 1)[1].strip().strip('"') for line in content
+                         if line.startswith("  group:"))
+            cancel = next(line.split(":", 1)[1].strip() for line in content
+                          if line.startswith("  cancel-in-progress:"))
+            configurations.append((group, cancel))
+
+        self.assertEqual(configurations[0], configurations[1])
+        self.assertEqual(configurations[0], ("betclic-prediction-pipeline", "false"))
+
+
 if __name__ == "__main__":
     unittest.main()
