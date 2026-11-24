@@ -29,7 +29,7 @@
           "prob_draw": 0.262,
           "prob_home": 0.473,
           "web_research_findings_json": "",
-          "web_research_status": "NO_RECENT_RESULTS"
+          "web_research_status": "SEARCH_ERROR"
         },
         {
           "action_status": "NO_BET_LARGE_DIVERGENCE",
@@ -264,8 +264,8 @@
           "web_research_status": "NO_RECENT_RESULTS"
         }
       ],
-      "sent_at_utc": "2026-11-24T07:44:24.101412+00:00",
-      "signature": "ad10515c49cef9d21b699e23a749011c9eab8669ab9bc45ec2ae28b09656d4de"
+      "sent_at_utc": "2026-11-24T08:01:24.008544+00:00",
+      "signature": "98275679785d59bb8d6c13bc952a0f28b680253752617f077eacee9ce7369683"
     }
   },
   "version": 1
