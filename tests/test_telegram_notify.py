@@ -1,7 +1,7 @@
 import unittest
 from html.parser import HTMLParser
 from unittest.mock import Mock
-from telegram_notify import build_message, format_kickoff, send_telegram
+from telegram_notify import build_message, build_messages, format_kickoff, send_telegram
 
 
 class TelegramNotificationTests(unittest.TestCase):
@@ -113,13 +113,18 @@ class TelegramNotificationTests(unittest.TestCase):
             "web_research_status": "RESULTS_FOUND",
             "web_research_findings_json": '[{"title":"' + ("Actualite " * 50) + '","source_name":"Source","url":"https://example.com"}]'
         } for i in range(20)]
-        message = build_message(rows)
-        checker = BalanceChecker()
-        checker.feed(message)
-        checker.close()
-        self.assertLessEqual(len(message), 4096)
-        self.assertEqual(checker.errors, [])
-        self.assertEqual(checker.stack, [])
+        with self.assertRaises(ValueError):
+            build_message(rows)
+        messages = build_messages(rows)
+        self.assertGreater(len(messages), 1)
+        self.assertTrue(all(len(message) <= 4096 for message in messages))
+        self.assertIn("1/", messages[0])
+        for message in messages:
+            checker = BalanceChecker()
+            checker.feed(message)
+            checker.close()
+            self.assertEqual(checker.errors, [])
+            self.assertEqual(checker.stack, [])
 
 
 class TelegramHybridDedupTests(unittest.TestCase):
