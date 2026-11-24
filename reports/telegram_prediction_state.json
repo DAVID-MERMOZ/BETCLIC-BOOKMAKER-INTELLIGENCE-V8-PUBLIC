@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "1a8bc1dc724bc3281ce3c99d124408681c5fc284a5652a7f12590dc662a0cde4",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -52,13 +43,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 2.51,
           "lambda_home": 2.23,
-          "market_prob_away": 0.127,
-          "market_prob_draw": 0.156,
-          "market_prob_home": 0.718,
+          "market_prob_away": 0.144,
+          "market_prob_draw": 0.167,
+          "market_prob_home": 0.689,
           "market_status": "AVAILABLE",
           "match_key": "1271904014995456",
           "match_name": "RB Leipzig - RC Lens",
-          "max_abs_edge_pp": 69.7,
+          "max_abs_edge_pp": 68.0,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.95,
           "over_2_5": 0.852,
@@ -81,13 +72,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 1.25,
           "lambda_home": 1.97,
-          "market_prob_away": 0.105,
-          "market_prob_draw": 0.143,
-          "market_prob_home": 0.752,
+          "market_prob_away": 0.112,
+          "market_prob_draw": 0.15,
+          "market_prob_home": 0.738,
           "market_status": "AVAILABLE",
           "match_key": "1271904177508352",
           "match_name": "Manchester City - Naples",
-          "max_abs_edge_pp": 38.1,
+          "max_abs_edge_pp": 36.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.831,
           "over_2_5": 0.624,
@@ -139,13 +130,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 1.69,
           "lambda_home": 1.4,
-          "market_prob_away": 0.455,
-          "market_prob_draw": 0.252,
-          "market_prob_home": 0.294,
+          "market_prob_away": 0.475,
+          "market_prob_draw": 0.25,
+          "market_prob_home": 0.275,
           "market_status": "AVAILABLE",
           "match_key": "1271904506773504",
           "match_name": "Feyenoord - FC Porto",
-          "max_abs_edge_pp": 22.3,
+          "max_abs_edge_pp": 20.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.814,
           "over_2_5": 0.596,
@@ -168,13 +159,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 1.26,
           "lambda_home": 1.6,
-          "market_prob_away": 0.141,
-          "market_prob_draw": 0.199,
-          "market_prob_home": 0.66,
+          "market_prob_away": 0.148,
+          "market_prob_draw": 0.205,
+          "market_prob_home": 0.648,
           "market_status": "AVAILABLE",
           "match_key": "1271905024757778",
           "match_name": "Arsenal - Borussia Dortmund",
-          "max_abs_edge_pp": 22.1,
+          "max_abs_edge_pp": 20.9,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.78,
           "over_2_5": 0.546,
@@ -187,8 +178,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-24T18:24:33.668495+00:00",
-      "signature": "d3cc52232d20a15e0f32d445a4867dbb618ff2854226a54b05b879f503586013"
+      "sent_at_utc": "2026-11-24T19:36:26.523867+00:00",
+      "signature": "1a8bc1dc724bc3281ce3c99d124408681c5fc284a5652a7f12590dc662a0cde4"
     }
   },
   "version": 1
