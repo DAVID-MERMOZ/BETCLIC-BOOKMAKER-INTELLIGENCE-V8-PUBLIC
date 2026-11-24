@@ -71,13 +71,13 @@
           "kickoff_utc": "2026-11-24T17:45:00+00:00",
           "lambda_away": 1.26,
           "lambda_home": 1.52,
-          "market_prob_away": 0.153,
-          "market_prob_draw": 0.159,
-          "market_prob_home": 0.688,
+          "market_prob_away": 0.147,
+          "market_prob_draw": 0.164,
+          "market_prob_home": 0.69,
           "market_status": "AVAILABLE",
           "match_key": "1271904160731136",
           "match_name": "Bodø/Glimt - LASK Linz",
-          "max_abs_edge_pp": 38.9,
+          "max_abs_edge_pp": 39.0,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.766,
           "over_2_5": 0.526,
@@ -158,13 +158,13 @@
           "kickoff_utc": "2026-11-24T17:45:00+00:00",
           "lambda_away": 1.49,
           "lambda_home": 1.9,
-          "market_prob_away": 0.422,
-          "market_prob_draw": 0.251,
-          "market_prob_home": 0.327,
+          "market_prob_away": 0.432,
+          "market_prob_draw": 0.243,
+          "market_prob_home": 0.325,
           "market_status": "AVAILABLE",
           "match_key": "1271904379887616",
           "match_name": "Galatasaray - Aston Villa",
-          "max_abs_edge_pp": 2.7,
+          "max_abs_edge_pp": 1.9,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.851,
           "over_2_5": 0.657,
@@ -264,8 +264,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-24T13:56:29.430547+00:00",
-      "signature": "bb0a4b2e0ecde05f0d6cb75ffd74785bfb71ee187a84d51f02ce37b819bf4e02"
+      "sent_at_utc": "2026-11-24T15:38:42.760880+00:00",
+      "signature": "5390f20e932d91d5a80901bd3f5ab7f1fc6930597ade0b46ba6781591e2d6f1f"
     }
   },
   "version": 1
