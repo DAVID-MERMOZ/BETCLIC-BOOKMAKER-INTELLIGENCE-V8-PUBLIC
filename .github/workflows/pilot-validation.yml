@@ -34,6 +34,14 @@ jobs:
     steps:
       - name: Recuperer le code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Synchroniser le commit et l'etat depuis main avant le pilote
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git rebase origin/main
 
       - name: Installer Python
         uses: actions/setup-python@v5
