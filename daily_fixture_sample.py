@@ -2,6 +2,7 @@
 import csv
 from collections import Counter
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import joblib
@@ -16,6 +17,25 @@ from team_form_model_experiment import (
 from goal_markets import predict_goal_markets
 
 OUT = Path("reports/todays_sample_predictions.csv")
+DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
+
+
+def select_daily_fixtures(fixtures, now=None):
+    """Conserve les matchs du jour civil local Africa/Douala."""
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    local_day = now.astimezone(DAILY_TIMEZONE).date()
+    selected = []
+    for fixture in fixtures:
+        kickoff = fixture.get("kickoff")
+        if not isinstance(kickoff, datetime):
+            continue
+        if kickoff.tzinfo is None:
+            kickoff = kickoff.replace(tzinfo=timezone.utc)
+        if kickoff.astimezone(DAILY_TIMEZONE).date() == local_day:
+            selected.append(fixture)
+    return selected
 
 
 def probabilities(model, vector):
@@ -47,9 +67,10 @@ def main():
         )
 
     now = datetime.now(timezone.utc)
+    daily_upcoming = select_daily_fixtures(upcoming, now)
     history = load_history_from_db(DB_PATH)
     rows = []
-    for fixture in upcoming:
+    for fixture in daily_upcoming:
         vector = fixture["features"]
         probs = probabilities(model, vector)
         balanced = probabilities(balanced_model, vector) if balanced_model else None
@@ -132,9 +153,12 @@ def main():
         writer.writerows(rows)
 
     print("HEURE DE GENERATION UTC :", now.isoformat())
-    print("MATCHS FUTURS EN BASE :", len(upcoming) + rejected.get("insufficient_prior_form", 0))
+    print("DATE LOCALE DE REFERENCE :", now.astimezone(DAILY_TIMEZONE).date().isoformat())
+    print("MATCHS FUTURS ADMISSIBLES AVANT FILTRE JOUR :", len(upcoming))
+    print("MATCHS DU JOUR AFRICA/DOUALA :", len(daily_upcoming))
+    print("MATCHS FUTURS HORS JOUR EXCLUS :", len(upcoming) - len(daily_upcoming))
     print("PREDICTIONS ADMISSIBLES :", len(rows))
-    print("EXCLUSIONS :", rejected)
+    print("EXCLUSIONS DONNEES/HISTORIQUE :", rejected)
     print("COUVERTURE CLASSES ENTRAINEMENT :", dict(counts))
     print("STATUT MODELE :", payload.get("status", "EXPERIMENTAL"))
     print("CSV :", OUT)
