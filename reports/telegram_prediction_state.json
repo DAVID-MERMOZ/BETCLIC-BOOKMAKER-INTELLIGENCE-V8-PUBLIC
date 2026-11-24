@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "d3cc52232d20a15e0f32d445a4867dbb618ff2854226a54b05b879f503586013",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -72,35 +63,6 @@
         },
         {
           "action_status": "NO_BET_LARGE_DIVERGENCE",
-          "btts_yes": 0.56,
-          "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
-          "comparison_status": "REVIEW_LARGE_DIVERGENCE",
-          "competition_name": "Ligue des Champions",
-          "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "history_quality": "STANDARD_3_PLUS",
-          "kickoff_utc": "2026-11-24T17:45:00+00:00",
-          "lambda_away": 1.26,
-          "lambda_home": 1.52,
-          "market_prob_away": 0.139,
-          "market_prob_draw": 0.157,
-          "market_prob_home": 0.704,
-          "market_status": "AVAILABLE",
-          "match_key": "1271904160731136",
-          "match_name": "Bodø/Glimt - LASK Linz",
-          "max_abs_edge_pp": 40.5,
-          "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "over_1_5": 0.766,
-          "over_2_5": 0.526,
-          "over_3_5": 0.304,
-          "prediction": "DRAW",
-          "prediction_1x2": "DRAW",
-          "prob_away": 0.348,
-          "prob_draw": 0.352,
-          "prob_home": 0.3,
-          "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
-        },
-        {
-          "action_status": "NO_BET_LARGE_DIVERGENCE",
           "btts_yes": 0.614,
           "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
           "comparison_status": "REVIEW_LARGE_DIVERGENCE",
@@ -139,13 +101,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 1.55,
           "lambda_home": 1.83,
-          "market_prob_away": 0.071,
+          "market_prob_away": 0.068,
           "market_prob_draw": 0.094,
-          "market_prob_home": 0.835,
+          "market_prob_home": 0.839,
           "market_status": "AVAILABLE",
           "match_key": "1271904224698368",
           "match_name": "Real Madrid - PSV Eindhoven",
-          "max_abs_edge_pp": 31.0,
+          "max_abs_edge_pp": 31.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.851,
           "over_2_5": 0.657,
@@ -155,35 +117,6 @@
           "prob_away": 0.338,
           "prob_draw": 0.138,
           "prob_home": 0.525,
-          "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
-        },
-        {
-          "action_status": "NO_BET_MODEL_UNVALIDATED",
-          "btts_yes": 0.658,
-          "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
-          "comparison_status": "NO_LARGE_DIVERGENCE",
-          "competition_name": "Ligue des Champions",
-          "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "history_quality": "STANDARD_3_PLUS",
-          "kickoff_utc": "2026-11-24T17:45:00+00:00",
-          "lambda_away": 1.49,
-          "lambda_home": 1.9,
-          "market_prob_away": 0.479,
-          "market_prob_draw": 0.237,
-          "market_prob_home": 0.283,
-          "market_status": "AVAILABLE",
-          "match_key": "1271904379887616",
-          "match_name": "Galatasaray - Aston Villa",
-          "max_abs_edge_pp": 4.8,
-          "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "over_1_5": 0.851,
-          "over_2_5": 0.657,
-          "over_3_5": 0.438,
-          "prediction": "AWAY",
-          "prediction_1x2": "AWAY",
-          "prob_away": 0.444,
-          "prob_draw": 0.224,
-          "prob_home": 0.332,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -226,13 +159,13 @@
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
           "lambda_away": 1.26,
           "lambda_home": 1.6,
-          "market_prob_away": 0.136,
+          "market_prob_away": 0.141,
           "market_prob_draw": 0.199,
-          "market_prob_home": 0.665,
+          "market_prob_home": 0.66,
           "market_status": "AVAILABLE",
           "match_key": "1271905024757778",
           "match_name": "Arsenal - Borussia Dortmund",
-          "max_abs_edge_pp": 22.6,
+          "max_abs_edge_pp": 22.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.78,
           "over_2_5": 0.546,
@@ -245,8 +178,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-24T17:36:14.863417+00:00",
-      "signature": "d67d6857ee2e71f1f1ccde08dcc41ec1802fa74ee97692e49fc8846815776a60"
+      "sent_at_utc": "2026-11-24T18:24:33.668495+00:00",
+      "signature": "d3cc52232d20a15e0f32d445a4867dbb618ff2854226a54b05b879f503586013"
     }
   },
   "version": 1
