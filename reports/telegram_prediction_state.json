@@ -10,7 +10,7 @@
           "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "history_quality": "STANDARD_3_PLUS",
           "kickoff_utc": "2026-11-24T20:00:00+00:00",
-          "market_movement_pattern": "REPRICING_MULTI_SELECTION",
+          "market_movement_pattern": "REPRICING_SELECTION_CIBLEE",
           "market_movement_status": "MOVEMENT_MEASURED",
           "market_prob_away": null,
           "market_prob_draw": null,
@@ -18,7 +18,7 @@
           "market_status": "AVAILABLE",
           "match_key": "1271902414852096",
           "match_name": "Slovan Bratislava - Betis",
-          "max_abs_edge_pp": 51.1,
+          "max_abs_edge_pp": 50.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.792,
           "over_2_5": 0.564,
@@ -264,8 +264,8 @@
           "web_research_status": "NO_RECENT_RESULTS"
         }
       ],
-      "sent_at_utc": "2026-11-24T07:20:04.824782+00:00",
-      "signature": "7bdf67ac95f3ce12c9462486d3be660d5a73e11d0df10c6df58954956d767895"
+      "sent_at_utc": "2026-11-24T07:44:24.101412+00:00",
+      "signature": "ad10515c49cef9d21b699e23a749011c9eab8669ab9bc45ec2ae28b09656d4de"
     }
   },
   "version": 1
