@@ -45,6 +45,48 @@ def probabilities(model, vector):
     return validate_probability_map(result)
 
 
+def extract_market_snapshot(fixture, now=None):
+    """Expose le snapshot 1X2 exact utilise pour la comparaison, avec son age."""
+    empty = {
+        "market_status": "NO_COMPLETE_PREMATCH_1X2",
+        "market_snapshot_utc": "",
+        "market_snapshot_age_minutes": "",
+        "market_prob_home": "",
+        "market_prob_draw": "",
+        "market_prob_away": "",
+    }
+    snapshot = fixture.get("market_snapshot")
+    if not snapshot:
+        return empty, None
+
+    now = now or datetime.now(timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    try:
+        stamp, _market_name, raw_probs = snapshot
+        if not isinstance(stamp, datetime):
+            stamp = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+        if stamp.tzinfo is None:
+            stamp = stamp.replace(tzinfo=timezone.utc)
+        stamp = stamp.astimezone(timezone.utc)
+        now_utc = now.astimezone(timezone.utc)
+        if stamp > now_utc:
+            raise ValueError("Snapshot marche posterieur a l'heure de generation.")
+        market_probs = validate_probability_map(raw_probs)
+        age_minutes = round((now_utc - stamp).total_seconds() / 60, 2)
+    except (TypeError, ValueError, KeyError, IndexError, AttributeError, OverflowError):
+        return {**empty, "market_status": "INVALID_PREMATCH_1X2_SNAPSHOT"}, None
+
+    return ({
+        "market_status": "AVAILABLE",
+        "market_snapshot_utc": stamp.isoformat(),
+        "market_snapshot_age_minutes": age_minutes,
+        "market_prob_home": round(market_probs["HOME"], 6),
+        "market_prob_draw": round(market_probs["DRAW"], 6),
+        "market_prob_away": round(market_probs["AWAY"], 6),
+    }, market_probs)
+
+
 def main():
     if not MODEL_PATH.exists():
         raise SystemExit("MODELE ABSENT : executer team_form_model_experiment.py avant ce script.")
@@ -76,6 +118,8 @@ def main():
         balanced = probabilities(balanced_model, vector) if balanced_model else None
         home_key, away_key = split_team_keys(fixture["match_name"])
         goals = predict_goal_markets(history, home_key, away_key, fixture["kickoff"])
+        market_fields, market_probs = extract_market_snapshot(fixture, now)
+        comparison_status = market_comparison_status(probs, market_probs)
         row = {
             "competition_name": fixture.get("competition_name") or "Championnat non renseigné",
             "generated_at_utc": now.isoformat(),
@@ -100,15 +144,12 @@ def main():
             "history_quality": fixture["history_quality"],
             "form_matches_home": fixture["form_matches_home"],
             "form_matches_away": fixture["form_matches_away"],
-            "market_status": "AVAILABLE" if fixture.get("market_snapshot") else "NO_COMPLETE_PREMATCH_1X2",
-            "max_abs_edge_pp": round(max(abs(probs[label] - fixture["market_snapshot"][2][label])
-                for label in CLASSES) * 100, 2) if fixture.get("market_snapshot") else "",
-            "comparison_status": market_comparison_status(
-                probs, fixture["market_snapshot"][2] if fixture.get("market_snapshot") else None),
+            **market_fields,
+            "max_abs_edge_pp": round(max(abs(probs[label] - market_probs[label])
+                for label in CLASSES) * 100, 2) if market_probs else "",
+            "comparison_status": comparison_status,
             "action_status": prediction_action_status(
-                fixture["history_quality"],
-                market_comparison_status(probs,
-                    fixture["market_snapshot"][2] if fixture.get("market_snapshot") else None),
+                fixture["history_quality"], comparison_status,
                 payload.get("status", "EXPERIMENTAL")),
             "goal_model_status": goals.get("status", "NOT_AVAILABLE"),
             "lambda_home": goals.get("lambda_home", ""),
@@ -140,7 +181,9 @@ def main():
         "model_status", "validation_status", "calibration_status",
         "probability_integrity_status", "balanced_probability_status",
         "history_quality", "form_matches_home",
-        "form_matches_away", "market_status", "max_abs_edge_pp", "comparison_status",
+        "form_matches_away", "market_status", "market_snapshot_utc",
+        "market_snapshot_age_minutes", "market_prob_home", "market_prob_draw",
+        "market_prob_away", "max_abs_edge_pp", "comparison_status",
         "action_status", "goal_model_status", "lambda_home", "lambda_away",
         "goal_history_home_n", "goal_history_away_n", "over_1_5", "under_1_5",
         "over_2_5", "under_2_5", "over_3_5", "under_3_5", "btts_yes", "btts_no",
@@ -158,6 +201,12 @@ def main():
     print("MATCHS DU JOUR AFRICA/DOUALA :", len(daily_upcoming))
     print("MATCHS FUTURS HORS JOUR EXCLUS :", len(upcoming) - len(daily_upcoming))
     print("PREDICTIONS ADMISSIBLES :", len(rows))
+    available_markets = [row for row in rows if row.get("market_status") == "AVAILABLE"]
+    market_ages = [float(row["market_snapshot_age_minutes"]) for row in available_markets
+                   if row.get("market_snapshot_age_minutes") not in (None, "")]
+    print("SNAPSHOTS 1X2 VALIDES :", len(available_markets), "/", len(rows))
+    if market_ages:
+        print("AGE MAX SNAPSHOT 1X2 (MIN) :", max(market_ages))
     print("EXCLUSIONS DONNEES/HISTORIQUE :", rejected)
     print("COUVERTURE CLASSES ENTRAINEMENT :", dict(counts))
     print("STATUT MODELE :", payload.get("status", "EXPERIMENTAL"))

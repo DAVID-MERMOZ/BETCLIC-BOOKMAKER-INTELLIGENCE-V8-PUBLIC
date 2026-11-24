@@ -31,6 +31,8 @@ class TelegramNotificationTests(unittest.TestCase):
         self.assertIn("1 61.0%", message)
         self.assertIn("NO_BET_MODEL_UNVALIDATED", message)
         self.assertIn("Over 2,5 : 57.0%", message)
+        self.assertIn("Buts attendus (modèle) : domicile 1.45 | extérieur 1.10", message)
+        self.assertIn("calibration DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED", message)
 
 
     def test_daily_sample_prediction_schema_is_supported(self):
@@ -115,10 +117,6 @@ class TelegramNotificationTests(unittest.TestCase):
         self.assertEqual(checker.stack, [])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TelegramHybridDedupTests(unittest.TestCase):
     def setUp(self):
         import tempfile
@@ -139,8 +137,12 @@ class TelegramHybridDedupTests(unittest.TestCase):
             "market_prob_draw": "0.25",
             "market_prob_away": "0.20",
             "max_abs_edge_pp": "6.2",
+            "lambda_home": "1.45",
+            "lambda_away": "1.10",
             "action_status": "NO_BET_MODEL_UNVALIDATED",
-            "model_status": "EXPERIMENTAL",
+            "model_status": "EXPERIMENTAL_NOT_VALIDATED",
+            "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED",
+            "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
             "market_status": "AVAILABLE",
             "comparison_status": "NO_LARGE_DIVERGENCE",
             "over_2_5": "0.57",
@@ -176,12 +178,41 @@ class TelegramHybridDedupTests(unittest.TestCase):
 
     def test_metadata_and_row_order_only_do_not_trigger_message(self):
         sender = Mock()
-        self._process(self.rows, sender)
-        metadata_only = [dict(self.rows[0], generated_at_utc="2099-01-01T00:00:00Z",
-                              training_n="999", run_id="different")]
+        initial = [dict(self.rows[0], web_research_status="NO_RECENT_RESULTS",
+                        web_research_findings_json="[]")]
+        self._process(initial, sender)
+        metadata_only = [dict(
+            self.rows[0],
+            generated_at_utc="2099-01-01T00:00:00Z",
+            training_n="999",
+            run_id="different",
+            web_research_status="SEARCH_ERROR",
+            web_research_findings_json='[{"title":"new search metadata"}]',
+        )]
         result = self._process(metadata_only, sender)
         self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
         self.assertEqual(sender.call_count, 1)
+
+    def test_market_probability_change_triggers_revision(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        changed = [dict(
+            self.rows[0],
+            market_prob_home="0.56",
+            market_prob_draw="0.24",
+            market_prob_away="0.20",
+        )]
+        result = self._process(changed, sender)
+        self.assertEqual(result["status"], "REVISION_SENT")
+        self.assertEqual(sender.call_count, 2)
+
+    def test_expected_goals_change_triggers_revision(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        changed = [dict(self.rows[0], lambda_home="1.60")]
+        result = self._process(changed, sender)
+        self.assertEqual(result["status"], "REVISION_SENT")
+        self.assertEqual(sender.call_count, 2)
 
     def test_failed_telegram_send_does_not_advance_state_and_can_retry(self):
         failing = Mock(side_effect=RuntimeError("temporary Telegram failure"))
@@ -200,3 +231,7 @@ class TelegramHybridDedupTests(unittest.TestCase):
         result = self._process(list(reversed(self.rows)), sender)
         self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
         self.assertEqual(sender.call_count, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

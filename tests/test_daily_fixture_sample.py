@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from daily_fixture_sample import select_daily_fixtures
+from daily_fixture_sample import extract_market_snapshot, select_daily_fixtures
 
 
 class DailyFixtureSampleTests(unittest.TestCase):
@@ -50,6 +50,43 @@ class DailyFixtureSampleTests(unittest.TestCase):
             [row["match_id"] for row in select_daily_fixtures([fixture], now)],
             ["naive"],
         )
+
+    def test_exports_the_market_probabilities_and_snapshot_age_used_by_the_model(self):
+        now = datetime(2026, 11, 24, 8, 0, tzinfo=timezone.utc)
+        snapshot_at = datetime(2026, 11, 24, 7, 30, tzinfo=timezone.utc)
+        fixture = {
+            "market_snapshot": (
+                snapshot_at,
+                "Résultat du match (t. rég)",
+                {"HOME": 0.50, "DRAW": 0.30, "AWAY": 0.20},
+            )
+        }
+
+        fields, probabilities = extract_market_snapshot(fixture, now)
+
+        self.assertEqual(fields["market_status"], "AVAILABLE")
+        self.assertEqual(fields["market_snapshot_utc"], snapshot_at.isoformat())
+        self.assertEqual(fields["market_snapshot_age_minutes"], 30.0)
+        self.assertEqual(fields["market_prob_home"], 0.5)
+        self.assertEqual(fields["market_prob_draw"], 0.3)
+        self.assertEqual(fields["market_prob_away"], 0.2)
+        self.assertEqual(probabilities, {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.2})
+
+    def test_missing_or_invalid_market_snapshot_is_never_marked_available(self):
+        missing, missing_probs = extract_market_snapshot({}, datetime(2026, 11, 24, 8, 0, tzinfo=timezone.utc))
+        invalid, invalid_probs = extract_market_snapshot(
+            {"market_snapshot": (
+                datetime(2026, 11, 24, 7, 30, tzinfo=timezone.utc),
+                "Résultat du match",
+                {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.3},
+            )},
+            datetime(2026, 11, 24, 8, 0, tzinfo=timezone.utc),
+        )
+
+        self.assertEqual(missing["market_status"], "NO_COMPLETE_PREMATCH_1X2")
+        self.assertIsNone(missing_probs)
+        self.assertEqual(invalid["market_status"], "INVALID_PREMATCH_1X2_SNAPSHOT")
+        self.assertIsNone(invalid_probs)
 
 
 if __name__ == "__main__":

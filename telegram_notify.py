@@ -25,6 +25,13 @@ def _pct(value):
         return "n/d"
 
 
+def _decimal(value):
+    try:
+        return f"{float(value):.2f}"
+    except (TypeError, ValueError):
+        return "n/d"
+
+
 def format_kickoff(value, timezone_name=LOCAL_TIMEZONE):
     """Return the fixture date and time in Cameroon local time."""
     if not value:
@@ -48,10 +55,17 @@ def _market_summary(row):
     fields = ("market_prob_home", "market_prob_draw", "market_prob_away")
     if not all(row.get(field) not in (None, "") for field in fields):
         return "Marché Betclic 1/N/2 : non disponible"
-    return "Marché Betclic 1/N/2 : " + " / ".join(
+    summary = "Marché Betclic 1/N/2 : " + " / ".join(
         f"{label} {_pct(row.get(field))}"
         for label, field in zip(("1", "N", "2"), fields)
     )
+    age = row.get("market_snapshot_age_minutes")
+    if age not in (None, ""):
+        try:
+            summary += f" | Snapshot : {float(age):.1f} min"
+        except (TypeError, ValueError):
+            pass
+    return summary
 
 
 def _news_lines(row):
@@ -78,7 +92,7 @@ def build_message(rows, run_url="", revision=False):
     """Build a valid Telegram HTML document without cutting through markup."""
     heading = "BETCLIC V8.1 — MISE À JOUR DES PRÉDICTIONS" if revision else "BETCLIC V8.1 — Collecte et prédictions"
     header = [f"<b>{heading}</b>", f"Matchs avec prédiction : <b>{len(rows)}</b>"]
-    footer = ["", "<i>Modèle expérimental : probabilités non garanties. NO BET si données insuffisantes ou modèle non validé.</i>"]
+    footer = ["", "<i>Probabilités indicatives, jamais garanties. NO BET si les données sont insuffisantes ou le modèle non validé.</i>"]
     if run_url:
         footer.insert(0, f'<a href="{html.escape(run_url, quote=True)}">Ouvrir le rapport complet GitHub Actions</a>')
     blocks = []
@@ -102,6 +116,23 @@ def build_message(rows, run_url="", revision=False):
             f"Écart maximal modèle/marché : {_pct(float(row['max_abs_edge_pp']) / 100) if row.get('max_abs_edge_pp') not in (None, '') else 'n/d'}",
             f"Décision : <b>{html.escape(str(action)[:120])}</b>",
         ]
+        if row.get("lambda_home") not in (None, "") and row.get("lambda_away") not in (None, ""):
+            block.append(
+                f"Buts attendus (modèle) : domicile {_decimal(row.get('lambda_home'))} | "
+                f"extérieur {_decimal(row.get('lambda_away'))}"
+            )
+        status_parts = []
+        for label, field in (
+            ("modèle", "model_status"),
+            ("validation", "validation_status"),
+            ("calibration", "calibration_status"),
+        ):
+            if row.get(field):
+                status_parts.append(f"{label} {html.escape(str(row[field])[:100])}")
+        if status_parts:
+            block.append("Statuts : " + " | ".join(status_parts))
+        if row.get("history_quality"):
+            block.append(f"Qualité historique : {html.escape(str(row['history_quality'])[:100])}")
         if row.get("over_2_5") not in (None, ""):
             block.append(
                 f"Buts : Over 1,5 {_pct(row.get('over_1_5'))} | "

@@ -20,13 +20,13 @@ NUMERIC_FIELDS = {
     "market_prob_home", "market_prob_draw", "market_prob_away",
     "over_1_5", "over_2_5", "over_3_5", "btts_yes",
 }
+EXPECTED_GOAL_FIELDS = {"lambda_home", "lambda_away"}
 TEXT_FIELDS = (
     "competition_name", "match_name", "kickoff_utc",
     "prediction", "prediction_1x2", "action_status",
     "market_status", "comparison_status", "model_status",
+    "validation_status", "calibration_status",
     "history_quality", "goal_model_status",
-    "market_movement_status", "market_movement_pattern",
-    "web_research_status", "web_research_findings_json",
 )
 
 
@@ -34,13 +34,13 @@ def _text(value):
     return str(value or "").strip()
 
 
-def _number(value):
+def _number(value, digits=3):
     if value in (None, ""):
         return None
     try:
-        # Telegram renders probabilities to one decimal percentage point.
-        # Three decimal places in probability space avoid noise-only updates.
-        return round(float(value), 3)
+        # Probabilities are displayed to 0.1 percentage point; expected goals
+        # are displayed to 0.01 goal. Match the signature to visible precision.
+        return round(float(value), digits)
     except (TypeError, ValueError):
         return _text(value)
 
@@ -76,6 +76,8 @@ def canonical_prediction_table(rows):
             item[field] = _text(value)
         for field in NUMERIC_FIELDS:
             item[field] = _number(row.get(field))
+        for field in EXPECTED_GOAL_FIELDS:
+            item[field] = _number(row.get(field), digits=2)
         edge = row.get("max_abs_edge_pp")
         try:
             item["max_abs_edge_pp"] = round(float(edge), 1) if edge not in (None, "") else None
