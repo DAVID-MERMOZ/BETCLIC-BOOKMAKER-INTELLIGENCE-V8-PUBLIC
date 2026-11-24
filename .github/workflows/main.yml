@@ -118,9 +118,6 @@ jobs:
       - name: Analyser les cotes
         run: python odds_analysis.py
 
-      - name: Detecter les changements de cotes sans modifier la base
-        run: python lightweight_change_collector.py
-
       - name: Verifier integrite et contenu SQLite (lecture seule)
         run: python database_diagnostic.py
 
@@ -138,6 +135,9 @@ jobs:
 
       - name: Generer le tableau quotidien unique pour Telegram
         run: python daily_fixture_sample.py
+
+      - name: Detecter les changements de cotes sans modifier la base
+        run: python lightweight_change_collector.py
 
       - name: Actualiser les probabilites de marche des matchs affectes
         run: python targeted_market_refresh.py
