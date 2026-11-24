@@ -164,12 +164,40 @@ def build_message(rows, run_url="", revision=False):
     if not rows:
         selected.append("Aucune prédiction exploitable pour cette collecte. Vérifier la disponibilité des matchs et des données.")
     if omitted:
-        selected.append(f"… {omitted} match(s) omis du message pour respecter la limite Telegram; consulter le rapport complet.")
+        raise ValueError("Message Telegram trop long : répartir les matchs en plusieurs messages.")
     message = "\n".join(selected + footer)
     if len(message) > 4096:
         # Defensive fallback: header/footer are static and always remain intact.
         raise RuntimeError("Message Telegram trop long après troncature sécurisée.")
     return message
+
+def build_messages(rows, run_url="", revision=False):
+    """Split every fixture into complete Telegram messages under the API limit."""
+    if not rows:
+        return [build_message([], run_url, revision)]
+    groups, current = [], []
+    for row in rows:
+        candidate = current + [row]
+        try:
+            build_message(candidate, run_url, revision)
+            current = candidate
+        except ValueError:
+            if not current:
+                raise RuntimeError("Une prédiction individuelle dépasse la limite Telegram.")
+            groups.append(current)
+            current = [row]
+            build_message(current, run_url, revision)
+    if current:
+        groups.append(current)
+    total, messages = len(groups), []
+    for index, group in enumerate(groups, 1):
+        message = build_message(group, run_url, revision)
+        heading = "BETCLIC V8.1 — MISE À JOUR DES PRÉDICTIONS" if revision else "BETCLIC V8.1 — Collecte et prédictions"
+        message = message.replace(f"<b>{heading}</b>", f"<b>{heading} — {index}/{total}</b>", 1)
+        if len(message) > 4096:
+            raise RuntimeError("En-tête de pagination : limite Telegram dépassée.")
+        messages.append(message)
+    return messages
 
 def read_predictions(path=PREDICTIONS_PATH):
     if not Path(path).exists():
@@ -220,7 +248,7 @@ def main():
         chat_id=chat_id,
         run_url=os.getenv("GITHUB_RUN_URL", ""),
         source_key=PREDICTIONS_PATH.name,
-        message_builder=build_message,
+        message_builder=build_messages,
         sender=send_telegram,
     )
     print("TELEGRAM :", result)
