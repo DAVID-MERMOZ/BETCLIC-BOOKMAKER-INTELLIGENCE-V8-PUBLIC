@@ -188,20 +188,37 @@ def process_predictions(rows, token, chat_id, run_url, source_key,
     signature = _signature(canonical)
     state = load_state(state_path)
     previous = state["sources"].get(source_key)
-    if previous and previous.get("signature") == signature:
+    pending = state.get("pending", {}).get(source_key)
+    if previous and previous.get("signature") == signature and not pending:
         return {"status": "UNCHANGED_SKIPPED", "sent": False, "matches": len(rows)}
 
-    message = message_builder(rows, run_url, revision=bool(previous))
-    # A failed Telegram call raises before the reference state is advanced.
-    sender(message, token, chat_id)
+    messages = message_builder(rows, run_url, revision=bool(previous))
+    if isinstance(messages, str):
+        messages = [messages]
+    if pending and pending.get("signature") == signature:
+        sent_parts = set(pending.get("sent_parts", []))
+    else:
+        sent_parts = set()
+        state.setdefault("pending", {})[source_key] = {
+            "signature": signature, "sent_parts": [], "total_parts": len(messages)
+        }
+        save_state(state, state_path, commit_to_git=commit_to_git)
+
+    for index, message in enumerate(messages):
+        if index in sent_parts:
+            continue
+        sender(message, token, chat_id)
+        sent_parts.add(index)
+        state["pending"][source_key]["sent_parts"] = sorted(sent_parts)
+        save_state(state, state_path, commit_to_git=commit_to_git)
+
     state["sources"][source_key] = {
-        "signature": signature,
-        "predictions": canonical,
+        "signature": signature, "predictions": canonical,
         "sent_at_utc": datetime.now(timezone.utc).isoformat(),
     }
+    state["pending"].pop(source_key, None)
     save_state(state, state_path, commit_to_git=commit_to_git)
     return {
         "status": "REVISION_SENT" if previous else "FIRST_TABLE_SENT",
-        "sent": True,
-        "matches": len(rows),
+        "sent": True, "matches": len(rows), "messages": len(messages),
     }
