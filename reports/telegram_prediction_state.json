@@ -1,7 +1,9 @@
 {
   "pending": {
     "todays_sample_predictions.csv": {
-      "sent_parts": [],
+      "sent_parts": [
+        0
+      ],
       "signature": "618b941b93357e65bd03899162e6563ccee646a28e2e92089f2d1af2f09c3a60",
       "total_parts": 2
     }
