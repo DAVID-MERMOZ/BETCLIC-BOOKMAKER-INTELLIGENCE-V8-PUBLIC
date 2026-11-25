@@ -62,6 +62,17 @@ class TargetedMarketRefreshTests(unittest.TestCase):
             1.0, places=5,
         )
 
+    def test_marks_stale_snapshot_as_stale_instead_of_updated(self):
+        rows = build_targeted_refresh(
+            self.db, self.changes, self.predictions,
+            datetime(2026, 11, 24, 12, tzinfo=timezone.utc),
+        )
+        row = rows[0]
+        self.assertEqual(row["market_status"], "STALE_PREMATCH_1X2_SNAPSHOT")
+        self.assertEqual(row["targeted_refresh_status"], "INCOMPLETE")
+        self.assertEqual(row["market_snapshot_utc"], "2026-11-23T10:00:00+00:00")
+        self.assertEqual(row["market_prob_home"], "")
+
     def test_marks_missing_complete_market_as_incomplete(self):
         with sqlite3.connect(self.db) as conn:
             conn.execute("DELETE FROM odds_history WHERE selection_name='Beta'")

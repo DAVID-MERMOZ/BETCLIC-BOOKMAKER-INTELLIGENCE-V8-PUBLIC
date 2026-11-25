@@ -20,6 +20,8 @@ CHANGES_PATH = Path("reports/changes_to_refresh.csv")
 PREDICTIONS_PATH = Path("reports/team_form_predictions.csv")
 OUTPUT_PATH = Path("reports/targeted_market_refresh.csv")
 CLASSES = ("HOME", "DRAW", "AWAY")
+# Keep the targeted report aligned with the daily prediction sample freshness rule.
+MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
 FIELDS = [
     "match_id", "match_name", "kickoff_utc", "refresh_checked_at_utc",
     "market_name", "market_status", "market_snapshot_utc", "market_prob_home",
@@ -204,15 +206,34 @@ def build_targeted_refresh(db_path, changes_path, predictions_path, now=None):
             })
         else:
             stamp, market_name, probs = snapshot
-            output.append({
-                **common, "market_name": market_name, "market_status": "UPDATED_FROM_LATEST_DB_SNAPSHOT",
-                "market_snapshot_utc": stamp,
-                "market_prob_home": round(probs["HOME"], 6),
-                "market_prob_draw": round(probs["DRAW"], 6),
-                "market_prob_away": round(probs["AWAY"], 6),
-                "targeted_refresh_status": "MARKET_ONLY_UPDATED",
-                "reason": "Cotes 1X2 actualisees; probabilites du modele conservees.",
-            })
+            stamp_dt = parse_utc(stamp)
+            age_minutes = (
+                (now.astimezone(timezone.utc) - stamp_dt).total_seconds() / 60
+                if stamp_dt is not None else float("inf")
+            )
+            if age_minutes > MAX_MARKET_SNAPSHOT_AGE_MINUTES:
+                output.append({
+                    **common, "market_name": market_name,
+                    "market_status": "STALE_PREMATCH_1X2_SNAPSHOT",
+                    "market_snapshot_utc": stamp,
+                    "market_prob_home": "", "market_prob_draw": "", "market_prob_away": "",
+                    "targeted_refresh_status": "INCOMPLETE",
+                    "reason": (
+                        f"Snapshot 1X2 trop ancien ({age_minutes:.1f} min; "
+                        f"seuil {MAX_MARKET_SNAPSHOT_AGE_MINUTES} min); "
+                        "aucune actualisation exploitable."
+                    ),
+                })
+            else:
+                output.append({
+                    **common, "market_name": market_name, "market_status": "UPDATED_FROM_LATEST_DB_SNAPSHOT",
+                    "market_snapshot_utc": stamp,
+                    "market_prob_home": round(probs["HOME"], 6),
+                    "market_prob_draw": round(probs["DRAW"], 6),
+                    "market_prob_away": round(probs["AWAY"], 6),
+                    "targeted_refresh_status": "MARKET_ONLY_UPDATED",
+                    "reason": "Cotes 1X2 actualisees; probabilites du modele conservees.",
+                })
     return output
 
 
