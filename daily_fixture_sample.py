@@ -18,6 +18,7 @@ from goal_markets import predict_goal_markets
 
 OUT = Path("reports/todays_sample_predictions.csv")
 DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
+MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
 
 
 def select_daily_fixtures(fixtures, now=None):
@@ -45,7 +46,7 @@ def probabilities(model, vector):
     return validate_probability_map(result)
 
 
-def extract_market_snapshot(fixture, now=None):
+def extract_market_snapshot(fixture, now=None, max_age_minutes=MAX_MARKET_SNAPSHOT_AGE_MINUTES):
     """Expose le snapshot 1X2 exact utilise pour la comparaison, avec son age."""
     empty = {
         "market_status": "NO_COMPLETE_PREMATCH_1X2",
@@ -74,6 +75,15 @@ def extract_market_snapshot(fixture, now=None):
             raise ValueError("Snapshot marche posterieur a l'heure de generation.")
         market_probs = validate_probability_map(raw_probs)
         age_minutes = round((now_utc - stamp).total_seconds() / 60, 2)
+        if age_minutes > max_age_minutes:
+            return ({
+                "market_status": "STALE_PREMATCH_1X2_SNAPSHOT",
+                "market_snapshot_utc": stamp.isoformat(),
+                "market_snapshot_age_minutes": age_minutes,
+                "market_prob_home": "",
+                "market_prob_draw": "",
+                "market_prob_away": "",
+            }, None)
     except (TypeError, ValueError, KeyError, IndexError, AttributeError, OverflowError):
         return {**empty, "market_status": "INVALID_PREMATCH_1X2_SNAPSHOT"}, None
 
@@ -202,11 +212,19 @@ def main():
     print("MATCHS FUTURS HORS JOUR EXCLUS :", len(upcoming) - len(daily_upcoming))
     print("PREDICTIONS ADMISSIBLES :", len(rows))
     available_markets = [row for row in rows if row.get("market_status") == "AVAILABLE"]
+    stale_markets = [row for row in rows
+                     if row.get("market_status") == "STALE_PREMATCH_1X2_SNAPSHOT"]
     market_ages = [float(row["market_snapshot_age_minutes"]) for row in available_markets
                    if row.get("market_snapshot_age_minutes") not in (None, "")]
+    stale_ages = [float(row["market_snapshot_age_minutes"]) for row in stale_markets
+                  if row.get("market_snapshot_age_minutes") not in (None, "")]
     print("SNAPSHOTS 1X2 VALIDES :", len(available_markets), "/", len(rows))
+    print("SNAPSHOTS 1X2 PERIMES :", len(stale_markets),
+          "(seuil :", MAX_MARKET_SNAPSHOT_AGE_MINUTES, "min)")
     if market_ages:
-        print("AGE MAX SNAPSHOT 1X2 (MIN) :", max(market_ages))
+        print("AGE MAX SNAPSHOT 1X2 VALIDE (MIN) :", max(market_ages))
+    if stale_ages:
+        print("AGE MAX SNAPSHOT 1X2 PERIME (MIN) :", max(stale_ages))
     print("EXCLUSIONS DONNEES/HISTORIQUE :", rejected)
     print("COUVERTURE CLASSES ENTRAINEMENT :", dict(counts))
     print("STATUT MODELE :", payload.get("status", "EXPERIMENTAL"))

@@ -58,6 +58,23 @@ class TelegramNotificationTests(unittest.TestCase):
         self.assertIn("Championnat : Ligue 1", message)
         self.assertIn("Over 2,5 : 56.0%", message)
 
+    def test_stale_market_snapshot_is_explicit_and_not_compared(self):
+        message = build_message([{
+            "competition_name": "Ligue 1",
+            "match_name": "Alpha - Beta",
+            "kickoff_utc": "2026-11-25T18:00:00Z",
+            "prediction_1x2": "HOME",
+            "prob_home": "0.60",
+            "prob_draw": "0.25",
+            "prob_away": "0.15",
+            "market_status": "STALE_PREMATCH_1X2_SNAPSHOT",
+            "market_snapshot_age_minutes": "1342.8",
+            "action_status": "NO_BET_MODEL_UNVALIDATED",
+        }])
+        self.assertIn("snapshot périmé (1343 min)", message)
+        self.assertIn("comparaison ignorée", message)
+        self.assertNotIn("Marché Betclic 1/N/2 : non disponible", message)
+
     def test_kickoff_handles_missing_and_invalid_values(self):
         self.assertIn("non renseignée", format_kickoff(""))
         self.assertIn("invalide", format_kickoff("not-a-date"))

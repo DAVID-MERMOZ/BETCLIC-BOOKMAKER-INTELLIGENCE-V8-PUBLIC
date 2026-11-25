@@ -72,6 +72,25 @@ class DailyFixtureSampleTests(unittest.TestCase):
         self.assertEqual(fields["market_prob_away"], 0.2)
         self.assertEqual(probabilities, {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.2})
 
+    def test_stale_market_snapshot_is_not_used_for_comparison(self):
+        now = datetime(2026, 11, 25, 8, 0, tzinfo=timezone.utc)
+        snapshot_at = datetime(2026, 11, 25, 5, 59, tzinfo=timezone.utc)
+        fixture = {
+            "market_snapshot": (
+                snapshot_at,
+                "Résultat du match (t. rég)",
+                {"HOME": 0.50, "DRAW": 0.30, "AWAY": 0.20},
+            )
+        }
+
+        fields, probabilities = extract_market_snapshot(fixture, now)
+
+        self.assertEqual(fields["market_status"], "STALE_PREMATCH_1X2_SNAPSHOT")
+        self.assertEqual(fields["market_snapshot_age_minutes"], 121.0)
+        self.assertEqual(fields["market_snapshot_utc"], snapshot_at.isoformat())
+        self.assertEqual(fields["market_prob_home"], "")
+        self.assertIsNone(probabilities)
+
     def test_missing_or_invalid_market_snapshot_is_never_marked_available(self):
         missing, missing_probs = extract_market_snapshot({}, datetime(2026, 11, 24, 8, 0, tzinfo=timezone.utc))
         invalid, invalid_probs = extract_market_snapshot(

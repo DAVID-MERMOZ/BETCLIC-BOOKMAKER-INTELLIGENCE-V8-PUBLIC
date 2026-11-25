@@ -52,6 +52,13 @@ def format_kickoff(value, timezone_name=LOCAL_TIMEZONE):
 
 
 def _market_summary(row):
+    if row.get("market_status") == "STALE_PREMATCH_1X2_SNAPSHOT":
+        age = row.get("market_snapshot_age_minutes")
+        try:
+            age_label = f"{float(age):.0f} min"
+        except (TypeError, ValueError):
+            age_label = "âge inconnu"
+        return f"Marché Betclic 1/N/2 : snapshot périmé ({age_label}) — comparaison ignorée"
     fields = ("market_prob_home", "market_prob_draw", "market_prob_away")
     if not all(row.get(field) not in (None, "") for field in fields):
         return "Marché Betclic 1/N/2 : non disponible"
