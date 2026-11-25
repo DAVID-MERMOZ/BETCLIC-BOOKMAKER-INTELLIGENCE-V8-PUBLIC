@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "34e6796a3303cdf72804719ef0bc0944179a332e211c56f37697dbb03ebc36b9",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -23,13 +14,13 @@
           "kickoff_utc": "2026-11-25T20:00:00+00:00",
           "lambda_away": 1.55,
           "lambda_home": 1.94,
-          "market_prob_away": 0.051,
-          "market_prob_draw": 0.091,
-          "market_prob_home": 0.858,
+          "market_prob_away": 0.053,
+          "market_prob_draw": 0.094,
+          "market_prob_home": 0.852,
           "market_status": "AVAILABLE",
           "match_key": "1271904806666240",
           "match_name": "Atlético Madrid - Viking FK",
-          "max_abs_edge_pp": 46.0,
+          "max_abs_edge_pp": 45.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.863,
           "over_2_5": 0.678,
@@ -52,13 +43,13 @@
           "kickoff_utc": "2026-11-25T20:00:00+00:00",
           "lambda_away": 1.16,
           "lambda_home": 1.41,
-          "market_prob_away": 0.4,
-          "market_prob_draw": 0.273,
-          "market_prob_home": 0.327,
+          "market_prob_away": 0.404,
+          "market_prob_draw": 0.276,
+          "market_prob_home": 0.32,
           "market_status": "AVAILABLE",
           "match_key": "1271932149338112",
           "match_name": "Shakhtar Donetsk - Fenerbahçe",
-          "max_abs_edge_pp": 12.0,
+          "max_abs_edge_pp": 11.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.726,
           "over_2_5": 0.474,
@@ -216,8 +207,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-25T00:22:27.604826+00:00",
-      "signature": "4e5a653cdcd6ebac57fc9be52737e1148288f933a13c7772c844fdaeffd56835"
+      "sent_at_utc": "2026-11-25T03:38:28.588284+00:00",
+      "signature": "34e6796a3303cdf72804719ef0bc0944179a332e211c56f37697dbb03ebc36b9"
     }
   },
   "version": 1
