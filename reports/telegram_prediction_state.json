@@ -1,74 +1,8 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0
-      ],
-      "signature": "a6eb2a3734501805a8b81a3fbd4e2c2029e12920aa2e83d9527196270fb5fcab",
-      "total_parts": 1
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
-        {
-          "action_status": "NO_BET_LARGE_DIVERGENCE",
-          "btts_yes": 0.675,
-          "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
-          "comparison_status": "REVIEW_LARGE_DIVERGENCE",
-          "competition_name": "Ligue des Champions",
-          "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "history_quality": "STANDARD_3_PLUS",
-          "kickoff_utc": "2026-11-25T20:00:00+00:00",
-          "lambda_away": 1.55,
-          "lambda_home": 1.94,
-          "market_prob_away": 0.05,
-          "market_prob_draw": 0.086,
-          "market_prob_home": 0.863,
-          "market_status": "AVAILABLE",
-          "match_key": "1271904806666240",
-          "match_name": "Atlético Madrid - Viking FK",
-          "max_abs_edge_pp": 46.5,
-          "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "over_1_5": 0.863,
-          "over_2_5": 0.678,
-          "over_3_5": 0.462,
-          "prediction": "AWAY",
-          "prediction_1x2": "AWAY",
-          "prob_away": 0.444,
-          "prob_draw": 0.158,
-          "prob_home": 0.398,
-          "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
-        },
-        {
-          "action_status": "NO_BET_MODEL_UNVALIDATED",
-          "btts_yes": 0.518,
-          "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
-          "comparison_status": "NO_LARGE_DIVERGENCE",
-          "competition_name": "Ligue des Champions",
-          "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "history_quality": "STANDARD_3_PLUS",
-          "kickoff_utc": "2026-11-25T20:00:00+00:00",
-          "lambda_away": 1.16,
-          "lambda_home": 1.41,
-          "market_prob_away": 0.359,
-          "market_prob_draw": 0.259,
-          "market_prob_home": 0.382,
-          "market_status": "AVAILABLE",
-          "match_key": "1271932149338112",
-          "match_name": "Shakhtar Donetsk - Fenerbahçe",
-          "max_abs_edge_pp": 13.3,
-          "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-          "over_1_5": 0.726,
-          "over_2_5": 0.474,
-          "over_3_5": 0.257,
-          "prediction": "DRAW",
-          "prediction_1x2": "DRAW",
-          "prob_away": 0.334,
-          "prob_draw": 0.393,
-          "prob_home": 0.273,
-          "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
-        },
         {
           "action_status": "NO_BET_MODEL_UNVALIDATED",
           "btts_yes": 0.663,
@@ -186,8 +120,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-25T19:35:04.974032+00:00",
-      "signature": "7d2e928b11690104f116df88fdba19138dad9256258d79bc6df8de74d6d6bac5"
+      "sent_at_utc": "2026-11-25T20:39:55.641533+00:00",
+      "signature": "a6eb2a3734501805a8b81a3fbd4e2c2029e12920aa2e83d9527196270fb5fcab"
     }
   },
   "version": 1
