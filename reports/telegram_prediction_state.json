@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "618b941b93357e65bd03899162e6563ccee646a28e2e92089f2d1af2f09c3a60",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -23,13 +14,13 @@
           "kickoff_utc": "2026-11-25T20:00:00+00:00",
           "lambda_away": 1.55,
           "lambda_home": 1.94,
-          "market_prob_away": 0.055,
+          "market_prob_away": 0.057,
           "market_prob_draw": 0.091,
-          "market_prob_home": 0.854,
+          "market_prob_home": 0.852,
           "market_status": "AVAILABLE",
           "match_key": "1271904806666240",
           "match_name": "Atlético Madrid - Viking FK",
-          "max_abs_edge_pp": 45.6,
+          "max_abs_edge_pp": 45.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.863,
           "over_2_5": 0.678,
@@ -52,13 +43,13 @@
           "kickoff_utc": "2026-11-25T20:00:00+00:00",
           "lambda_away": 1.16,
           "lambda_home": 1.41,
-          "market_prob_away": 0.385,
-          "market_prob_draw": 0.269,
-          "market_prob_home": 0.346,
+          "market_prob_away": 0.369,
+          "market_prob_draw": 0.271,
+          "market_prob_home": 0.36,
           "market_status": "AVAILABLE",
           "match_key": "1271932149338112",
           "match_name": "Shakhtar Donetsk - Fenerbahçe",
-          "max_abs_edge_pp": 12.3,
+          "max_abs_edge_pp": 12.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.726,
           "over_2_5": 0.474,
@@ -187,8 +178,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-25T12:42:43.138891+00:00",
-      "signature": "facd30645a8030f1b9bed1de9b67fa7a20f97f19ef72264b2fa6aa59188fd18e"
+      "sent_at_utc": "2026-11-25T14:48:40.631590+00:00",
+      "signature": "618b941b93357e65bd03899162e6563ccee646a28e2e92089f2d1af2f09c3a60"
     }
   },
   "version": 1
