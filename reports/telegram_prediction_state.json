@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "2cd88b3db3e33b89de784810cdc4511945ee2d94ebb35386af69e6fa542af938",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -52,13 +43,13 @@
           "kickoff_utc": "2026-11-25T20:00:00+00:00",
           "lambda_away": 1.16,
           "lambda_home": 1.41,
-          "market_prob_away": 0.386,
-          "market_prob_draw": 0.273,
-          "market_prob_home": 0.34,
+          "market_prob_away": 0.379,
+          "market_prob_draw": 0.271,
+          "market_prob_home": 0.35,
           "market_status": "AVAILABLE",
           "match_key": "1271932149338112",
           "match_name": "Shakhtar Donetsk - Fenerbahçe",
-          "max_abs_edge_pp": 11.9,
+          "max_abs_edge_pp": 12.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.726,
           "over_2_5": 0.474,
@@ -81,13 +72,13 @@
           "kickoff_utc": "2026-11-25T12:00:00+00:00",
           "lambda_away": 1.8,
           "lambda_home": 1.97,
-          "market_prob_away": 0.513,
-          "market_prob_draw": 0.268,
-          "market_prob_home": 0.219,
+          "market_prob_away": 0.518,
+          "market_prob_draw": 0.266,
+          "market_prob_home": 0.215,
           "market_status": "AVAILABLE",
           "match_key": "1287836015816704",
           "match_name": "Radnicki Nis - Zeleznicar Pancevo",
-          "max_abs_edge_pp": 12.1,
+          "max_abs_edge_pp": 12.5,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.89,
           "over_2_5": 0.725,
@@ -216,8 +207,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-25T09:51:07.024164+00:00",
-      "signature": "dc1cef71c61d87090100c89af5680aae1b7a918812c7c87ec60f7dc68393d698"
+      "sent_at_utc": "2026-11-25T11:35:16.377876+00:00",
+      "signature": "2cd88b3db3e33b89de784810cdc4511945ee2d94ebb35386af69e6fa542af938"
     }
   },
   "version": 1
