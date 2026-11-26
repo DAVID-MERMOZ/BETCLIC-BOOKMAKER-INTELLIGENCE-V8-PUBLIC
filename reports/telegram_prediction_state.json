@@ -1,17 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "signature": "fafb59a7f6cf1afcaed039d3d7732f1eb4c9f80c5cd4713b8189a65031fbb949",
-      "total_parts": 5
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -56,12 +44,12 @@
           "lambda_away": 1.41,
           "lambda_home": 1.69,
           "market_prob_away": 0.117,
-          "market_prob_draw": 0.173,
-          "market_prob_home": 0.709,
+          "market_prob_draw": 0.183,
+          "market_prob_home": 0.701,
           "market_status": "AVAILABLE",
           "match_key": "1273288893407232",
           "match_name": "Marseille - Levski Sofia",
-          "max_abs_edge_pp": 31.1,
+          "max_abs_edge_pp": 30.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.815,
           "over_2_5": 0.599,
@@ -84,13 +72,13 @@
           "kickoff_utc": "2026-11-26T17:45:00+00:00",
           "lambda_away": 1.22,
           "lambda_home": 2.12,
-          "market_prob_away": 0.119,
-          "market_prob_draw": 0.167,
-          "market_prob_home": 0.714,
+          "market_prob_away": 0.121,
+          "market_prob_draw": 0.17,
+          "market_prob_home": 0.709,
           "market_status": "AVAILABLE",
           "match_key": "1273289344290816",
           "match_name": "Union Saint-Gilloise - Lech Poznan",
-          "max_abs_edge_pp": 24.3,
+          "max_abs_edge_pp": 23.8,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.846,
           "over_2_5": 0.648,
@@ -103,23 +91,23 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
-          "action_status": "NO_BET_MODEL_UNVALIDATED",
+          "action_status": "NO_BET_LARGE_DIVERGENCE",
           "btts_yes": 0.567,
           "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
-          "comparison_status": "NO_LARGE_DIVERGENCE",
+          "comparison_status": "REVIEW_LARGE_DIVERGENCE",
           "competition_name": "Ligue Europa",
           "goal_model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "history_quality": "STANDARD_3_PLUS",
           "kickoff_utc": "2026-11-26T17:45:00+00:00",
           "lambda_away": 1.51,
           "lambda_home": 1.3,
-          "market_prob_away": 0.494,
-          "market_prob_draw": 0.26,
-          "market_prob_home": 0.245,
+          "market_prob_away": 0.502,
+          "market_prob_draw": 0.249,
+          "market_prob_home": 0.249,
           "market_status": "AVAILABLE",
           "match_key": "1273289482706944",
           "match_name": "Celta Vigo - Bournemouth",
-          "max_abs_edge_pp": 14.0,
+          "max_abs_edge_pp": 15.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.771,
           "over_2_5": 0.533,
@@ -403,13 +391,13 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.98,
           "lambda_home": 1.75,
-          "market_prob_away": 0.37,
+          "market_prob_away": 0.363,
           "market_prob_draw": 0.264,
-          "market_prob_home": 0.366,
+          "market_prob_home": 0.373,
           "market_status": "AVAILABLE",
           "match_key": "1276178830721024",
           "match_name": "FC Nordsjaelland - Panathinaikos",
-          "max_abs_edge_pp": 24.4,
+          "max_abs_edge_pp": 25.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.887,
           "over_2_5": 0.72,
@@ -509,8 +497,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-26T09:29:27.198061+00:00",
-      "signature": "8209fdece2f9d29f2dfb2396c93b0b0ffa308d98bf3e014b2a1b292d936a3547"
+      "sent_at_utc": "2026-11-26T09:36:31.321933+00:00",
+      "signature": "fafb59a7f6cf1afcaed039d3d7732f1eb4c9f80c5cd4713b8189a65031fbb949"
     }
   },
   "version": 1
