@@ -125,6 +125,41 @@ def team_prior_match_count(history, team, kickoff):
     ))
 
 
+def _history_from_provider_rows(rows):
+    """Nettoie l'historique multi-fournisseurs avant tout calcul de forme.
+
+    Une rencontre identique fournie par deux sources ne doit compter qu'une fois.
+    Les rencontres entre catégories d'effectifs incompatibles (senior/femmes,
+    senior/jeunes, etc.) sont écartées pour éviter de contaminer la forme d'un club.
+    """
+    history = []
+    seen = set()
+    for date, home, away, hg, ag in rows:
+        stamp = parse_utc(date)
+        if stamp is None or not home or not away:
+            continue
+        if squad_profile(home) != squad_profile(away):
+            continue
+        try:
+            home_goals, away_goals = int(hg), int(ag)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if home_goals < 0 or away_goals < 0:
+            continue
+        home_key, away_key = team_key(home), team_key(away)
+        # Identité indépendante du fournisseur et de l'ordre domicile/extérieur.
+        # Les buts restent associés à leur équipe pour reconnaître un doublon inversé.
+        team_scores = tuple(sorted(((home_key, home_goals), (away_key, away_goals))))
+        identity = (stamp.replace(second=0, microsecond=0), team_scores)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        history.append({"date": stamp, "home": home_key, "away": away_key,
+                        "hg": home_goals, "ag": away_goals})
+    history.sort(key=lambda r: r["date"])
+    return history
+
+
 def load_history(conn):
     rows = conn.execute("""
         SELECT utc_date, home_team, away_team, home_score, away_score
@@ -132,15 +167,7 @@ def load_history(conn):
         WHERE status='FINISHED' AND home_score IS NOT NULL
           AND away_score IS NOT NULL AND utc_date IS NOT NULL
     """).fetchall()
-    history = []
-    for date, home, away, hg, ag in rows:
-        stamp = parse_utc(date)
-        if stamp is None or not home or not away:
-            continue
-        history.append({"date": stamp, "home": team_key(home), "away": team_key(away),
-                        "hg": int(hg), "ag": int(ag)})
-    history.sort(key=lambda r: r["date"])
-    return history
+    return _history_from_provider_rows(rows)
 
 
 def build_team_dataset(db_path=DB_PATH):
