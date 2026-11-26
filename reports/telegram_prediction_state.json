@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "9badf4d9db152b92d98843d9273e6863a7dcf5edb553882bf877cc2d132ecf55",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -23,22 +14,22 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 2.08,
           "lambda_home": 1.36,
-          "market_prob_away": 0.249,
-          "market_prob_draw": 0.238,
-          "market_prob_home": 0.512,
+          "market_prob_away": 0.259,
+          "market_prob_draw": 0.24,
+          "market_prob_home": 0.502,
           "market_status": "AVAILABLE",
           "match_key": "1273289616928768",
           "match_name": "Crystal Palace - Real Sociedad",
-          "max_abs_edge_pp": 48.4,
+          "max_abs_edge_pp": 47.3,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.857,
           "over_2_5": 0.668,
           "over_3_5": 0.45,
-          "prediction": "AWAY",
-          "prediction_1x2": "AWAY",
-          "prob_away": 0.68,
-          "prob_draw": 0.292,
-          "prob_home": 0.028,
+          "prediction": "HOME",
+          "prediction_1x2": "HOME",
+          "prob_away": 0.322,
+          "prob_draw": 0.247,
+          "prob_home": 0.431,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -65,9 +56,9 @@
           "over_3_5": 0.441,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.277,
-          "prob_draw": 0.265,
-          "prob_home": 0.458,
+          "prob_away": 0.133,
+          "prob_draw": 0.17,
+          "prob_home": 0.697,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -94,9 +85,9 @@
           "over_3_5": 0.364,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
-          "prob_away": 0.379,
-          "prob_draw": 0.301,
-          "prob_home": 0.32,
+          "prob_away": 0.529,
+          "prob_draw": 0.25,
+          "prob_home": 0.221,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -110,22 +101,22 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.15,
           "lambda_home": 1.46,
-          "market_prob_away": 0.075,
-          "market_prob_draw": 0.156,
-          "market_prob_home": 0.768,
+          "market_prob_away": 0.08,
+          "market_prob_draw": 0.164,
+          "market_prob_home": 0.757,
           "market_status": "AVAILABLE",
           "match_key": "1273290452647936",
           "match_name": "Sunderland - Jagiellonia Bialystok",
-          "max_abs_edge_pp": 53.2,
+          "max_abs_edge_pp": 52.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.734,
           "over_2_5": 0.483,
           "over_3_5": 0.265,
-          "prediction": "AWAY",
-          "prediction_1x2": "AWAY",
-          "prob_away": 0.406,
-          "prob_draw": 0.358,
-          "prob_home": 0.236,
+          "prediction": "HOME",
+          "prediction_1x2": "HOME",
+          "prob_away": 0.129,
+          "prob_draw": 0.193,
+          "prob_home": 0.679,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -139,9 +130,9 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.89,
           "lambda_home": 1.72,
-          "market_prob_away": 0.54,
+          "market_prob_away": 0.531,
           "market_prob_draw": 0.233,
-          "market_prob_home": 0.227,
+          "market_prob_home": 0.236,
           "market_status": "AVAILABLE",
           "match_key": "1276178811863071",
           "match_name": "CSKA Sofia - Trabzonspor",
@@ -152,9 +143,9 @@
           "over_3_5": 0.486,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
-          "prob_away": 0.521,
-          "prob_draw": 0.266,
-          "prob_home": 0.213,
+          "prob_away": 0.53,
+          "prob_draw": 0.238,
+          "prob_home": 0.232,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -179,11 +170,11 @@
           "over_1_5": 0.885,
           "over_2_5": 0.717,
           "over_3_5": 0.508,
-          "prediction": "AWAY",
-          "prediction_1x2": "AWAY",
-          "prob_away": 0.552,
-          "prob_draw": 0.241,
-          "prob_home": 0.207,
+          "prediction": "HOME",
+          "prediction_1x2": "HOME",
+          "prob_away": 0.35,
+          "prob_draw": 0.251,
+          "prob_home": 0.399,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -197,27 +188,27 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.23,
           "lambda_home": 1.86,
-          "market_prob_away": 0.64,
-          "market_prob_draw": 0.206,
-          "market_prob_home": 0.154,
+          "market_prob_away": 0.632,
+          "market_prob_draw": 0.209,
+          "market_prob_home": 0.158,
           "market_status": "AVAILABLE",
           "match_key": "1276179683213312",
           "match_name": "Borac Banja Luka - Atalanta",
-          "max_abs_edge_pp": 29.4,
+          "max_abs_edge_pp": 28.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.814,
           "over_2_5": 0.598,
           "over_3_5": 0.374,
-          "prediction": "HOME",
-          "prediction_1x2": "HOME",
-          "prob_away": 0.345,
-          "prob_draw": 0.257,
-          "prob_home": 0.398,
+          "prediction": "AWAY",
+          "prediction_1x2": "AWAY",
+          "prob_away": 0.589,
+          "prob_draw": 0.216,
+          "prob_home": 0.194,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-26T19:42:03.324889+00:00",
-      "signature": "8f7895bd93142015afa3b1264709e36cd8cb3a99e5e10dd22733c1ad20fd5d96"
+      "sent_at_utc": "2026-11-26T19:53:49.443726+00:00",
+      "signature": "9badf4d9db152b92d98843d9273e6863a7dcf5edb553882bf877cc2d132ecf55"
     }
   },
   "version": 1
