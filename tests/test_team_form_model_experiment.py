@@ -2,7 +2,8 @@ import unittest
 from datetime import datetime, timezone, timedelta
 
 from team_form_model_experiment import (team_form, evaluate, fit_final_model, team_key,
-                                        latest_complete_1x2_snapshot, prediction_action_status, team_form_features)
+                                        latest_complete_1x2_snapshot, prediction_action_status,
+                                        team_form_features, _history_from_provider_rows)
 from baseline_market_evaluation import CLASSES
 
 
@@ -12,6 +13,27 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(team_key("Naples"), team_key("SSC Napoli"))
         self.assertNotEqual(team_key("Arsenal"), team_key("Arsenal F."))
         self.assertNotEqual(team_key("Barcelona"), team_key("Barcelona U19"))
+
+    def test_history_deduplicates_same_match_across_providers(self):
+        rows = [
+            ("2026-11-01T15:00:00Z", "Alpha FC", "Beta FC", 2, 1),
+            # Même rencontre fournie une seconde fois avec les équipes inversées.
+            ("2026-11-01T15:00:30Z", "Beta FC", "Alpha FC", 1, 2),
+        ]
+        history = _history_from_provider_rows(rows)
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["home"], team_key("Alpha FC"))
+        self.assertEqual(history[0]["away"], team_key("Beta FC"))
+        self.assertEqual((history[0]["hg"], history[0]["ag"]), (2, 1))
+
+    def test_history_excludes_incompatible_squad_categories(self):
+        rows = [
+            ("2026-11-01T15:00:00Z", "Sturm Graz", "Heart of Midlothian Women", 2, 0),
+            ("2026-11-02T15:00:00Z", "Alpha FC", "Beta FC", 1, 0),
+        ]
+        history = _history_from_provider_rows(rows)
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["home"], team_key("Alpha FC"))
 
     def test_form_uses_only_prior_matches(self):
         t = datetime(2026, 1, 10, tzinfo=timezone.utc)
