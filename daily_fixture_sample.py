@@ -22,7 +22,7 @@ OUT = Path("reports/todays_sample_predictions.csv")
 DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
 MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
 # Garde-fou provisoire : le modele experimental ne pese que 20% face au marche.
-MODEL_BLEND_WEIGHT = 0.20
+MODEL_BLEND_WEIGHT = 0.15
 
 
 def select_daily_fixtures(fixtures, now=None):
@@ -104,7 +104,7 @@ def extract_market_snapshot(fixture, now=None, max_age_minutes=MAX_MARKET_SNAPSH
 def market_anchored_probabilities(model_probs, market_probs, model_weight=MODEL_BLEND_WEIGHT):
     """Consensus prudent; conserve les probabilites brutes ailleurs pour audit.
 
-    Le marche pese 80% tant que le modele n'est pas valide/calibre. Sans cote
+    Le marche pese 85% tant que le modele n'est pas valide/calibre. Sans cote
     pre-match fraiche, aucune fusion n'est effectuee.
     """
     model_probs = validate_probability_map(model_probs)
@@ -173,7 +173,7 @@ def main():
             "model_raw_prob_home": round(probs["HOME"], 6),
             "model_raw_prob_draw": round(probs["DRAW"], 6),
             "model_raw_prob_away": round(probs["AWAY"], 6),
-            "consensus_method": "80_PERCENT_MARKET_20_PERCENT_EXPERIMENTAL_MODEL" if market_probs else "MODEL_ONLY_NO_FRESH_MARKET",
+            "consensus_method": "85_PERCENT_MARKET_15_PERCENT_EXPERIMENTAL_MODEL" if market_probs else "MODEL_ONLY_NO_FRESH_MARKET",
             "consensus_market_gap_pp": consensus_gap_pp,
             "balanced_prediction": max(balanced, key=balanced.get) if balanced else "",
             "balanced_prob_home": round(balanced["HOME"], 6) if balanced else "",
