@@ -76,6 +76,12 @@ class LightweightChangeCollectorTests(unittest.TestCase):
         with output.open(encoding="utf-8") as handle:
             self.assertEqual(len(list(csv.DictReader(handle))), 2)
 
+    def test_ignores_change_when_latest_snapshot_is_stale(self):
+        changes = collect_changes(
+            self.db, datetime(2026, 11, 23, 14, 1, tzinfo=timezone.utc)
+        )
+        self.assertEqual(changes, [])
+
 
 if __name__ == "__main__":
     unittest.main()

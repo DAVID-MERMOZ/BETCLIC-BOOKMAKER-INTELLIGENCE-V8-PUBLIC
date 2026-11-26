@@ -9,11 +9,12 @@ from __future__ import annotations
 import argparse
 import csv
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 DEFAULT_DB = Path("data/betclic_history.db")
 DEFAULT_OUTPUT = Path("reports/changes_to_refresh.csv")
+MAX_SNAPSHOT_AGE_MINUTES = 120
 FIELDS = [
     "match_id", "match_name", "match_date", "market_name", "selection_name",
     "previous_odds", "latest_odds", "odds_change_pct",
@@ -69,6 +70,18 @@ def collect_changes(db_path: Path, now: datetime | None = None) -> list[dict]:
             continue
         latest = snapshots[stamps[0]]
         previous = snapshots[stamps[1]]
+        # Un changement historique n'est pas un signal de rafraichissement actuel.
+        # Rejeter aussi les horodatages futurs (horloge/source incoherente).
+        try:
+            latest_dt = datetime.fromisoformat(str(stamps[0]).replace("Z", "+00:00"))
+            if latest_dt.tzinfo is None:
+                latest_dt = latest_dt.replace(tzinfo=timezone.utc)
+            latest_dt = latest_dt.astimezone(timezone.utc)
+        except (TypeError, ValueError):
+            continue
+        age_minutes = (now.astimezone(timezone.utc) - latest_dt).total_seconds() / 60
+        if age_minutes < 0 or age_minutes > MAX_SNAPSHOT_AGE_MINUTES:
+            continue
         try:
             old_odds = float(previous["odds"])
             new_odds = float(latest["odds"])
