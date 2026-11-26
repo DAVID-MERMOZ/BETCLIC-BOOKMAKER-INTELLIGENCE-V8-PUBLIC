@@ -4,6 +4,7 @@ import json
 import sqlite3
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import joblib
@@ -31,6 +32,7 @@ MODEL_PATH = Path("artifacts/team_form_model.joblib")
 ROLLING_N = 5
 MIN_PRIOR_MATCHES = 3
 MIN_CLASS_COUNT_FOR_LOO = 2
+PREMATCH_TIMEZONE = ZoneInfo("Africa/Douala")
 
 
 def team_form(history, team, kickoff, minimum_matches=MIN_PRIOR_MATCHES):
@@ -374,12 +376,20 @@ def build_upcoming_dataset(db_path=DB_PATH):
         match_odds = odds_by_match.get(str(match_id), [])
         market = latest_complete_1x2_snapshot(match_odds, name, now)
         market_movement = summarize_1x2_movement(match_odds, name, now)
-        web_research = research_match_news(
-            name,
-            market_movement.get("max_step_odds_change_pct",
-                               market_movement.get("odds_change_pct", {})),
-            force=True,
+        is_today_local = kickoff.astimezone(PREMATCH_TIMEZONE).date() == now.astimezone(PREMATCH_TIMEZONE).date()
+        movements = market_movement.get(
+            "max_step_odds_change_pct", market_movement.get("odds_change_pct", {})
         )
+        if is_today_local:
+            # Recherche limitee aux matchs du jour pour preserver la duree du pipeline.
+            web_research = research_match_news(name, movements, timeout=5, force=True)
+        elif market_movement.get("status") == "MOVEMENT_MEASURED":
+            web_research = research_match_news(name, movements, timeout=5)
+        else:
+            web_research = {
+                "status": "NOT_TRIGGERED", "triggered_moves": {},
+                "checked_at_utc": datetime.now(timezone.utc).isoformat(), "items": []
+            }
         upcoming.append({"match_id": str(match_id), "match_name": name,
                          "competition_name": competition_name or "Championnat non renseigné",
 "kickoff": kickoff, "features": (team_form_features(history, home, kickoff, "HOME", minimum_matches=1) + team_form_features(history, away, kickoff, "AWAY", minimum_matches=1)),
