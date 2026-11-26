@@ -1,17 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "signature": "12e96cc7a50171b6b253fac8c870431b1d2925e3900b79d505324e50f30af501",
-      "total_parts": 5
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -84,13 +72,13 @@
           "kickoff_utc": "2026-11-26T17:45:00+00:00",
           "lambda_away": 1.22,
           "lambda_home": 2.12,
-          "market_prob_away": 0.129,
-          "market_prob_draw": 0.175,
-          "market_prob_home": 0.696,
+          "market_prob_away": 0.135,
+          "market_prob_draw": 0.178,
+          "market_prob_home": 0.686,
           "market_status": "AVAILABLE",
           "match_key": "1273289344290816",
           "match_name": "Union Saint-Gilloise - Lech Poznan",
-          "max_abs_edge_pp": 22.5,
+          "max_abs_edge_pp": 21.5,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.846,
           "over_2_5": 0.648,
@@ -538,8 +526,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-26T00:25:30.222315+00:00",
-      "signature": "f831431ea27a9dcba498ff27713c4372d2d7c5f4688eba08edf90fd165845cc8"
+      "sent_at_utc": "2026-11-26T01:59:31.969490+00:00",
+      "signature": "12e96cc7a50171b6b253fac8c870431b1d2925e3900b79d505324e50f30af501"
     }
   },
   "version": 1
