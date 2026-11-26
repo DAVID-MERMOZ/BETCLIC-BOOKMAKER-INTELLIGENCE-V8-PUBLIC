@@ -1,7 +1,9 @@
 import unittest
 from datetime import datetime, timezone
 
-from daily_fixture_sample import extract_market_snapshot, select_daily_fixtures
+from daily_fixture_sample import (
+    extract_market_snapshot, market_anchored_probabilities, select_daily_fixtures,
+)
 
 
 class DailyFixtureSampleTests(unittest.TestCase):
@@ -106,6 +108,32 @@ class DailyFixtureSampleTests(unittest.TestCase):
         self.assertIsNone(missing_probs)
         self.assertEqual(invalid["market_status"], "INVALID_PREMATCH_1X2_SNAPSHOT")
         self.assertIsNone(invalid_probs)
+
+
+    def test_market_anchor_limits_experimental_signal_to_fifteen_percent(self):
+        model = {"HOME": 0.90, "DRAW": 0.05, "AWAY": 0.05}
+        market = {"HOME": 0.35, "DRAW": 0.30, "AWAY": 0.35}
+        consensus = market_anchored_probabilities(model, market)
+        self.assertAlmostEqual(consensus["HOME"], 0.4325)
+        self.assertAlmostEqual(consensus["DRAW"], 0.2625)
+        self.assertAlmostEqual(consensus["AWAY"], 0.3050)
+        self.assertAlmostEqual(sum(consensus.values()), 1.0)
+        self.assertLess(
+            max(abs(consensus[k] - market[k]) for k in market),
+            max(abs(model[k] - market[k]) for k in market),
+        )
+
+    def test_market_anchor_preserves_raw_model_when_market_missing(self):
+        model = {"HOME": 0.50, "DRAW": 0.30, "AWAY": 0.20}
+        self.assertEqual(market_anchored_probabilities(model, None), model)
+
+    def test_market_anchor_rejects_invalid_weight(self):
+        with self.assertRaises(ValueError):
+            market_anchored_probabilities(
+                {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.2},
+                {"HOME": 0.4, "DRAW": 0.3, "AWAY": 0.3},
+                model_weight=1.5,
+            )
 
 
 if __name__ == "__main__":
