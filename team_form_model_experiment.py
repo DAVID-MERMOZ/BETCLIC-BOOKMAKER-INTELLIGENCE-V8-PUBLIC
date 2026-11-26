@@ -183,26 +183,49 @@ def evaluate(samples, market_rows):
 
     cut = max(6, int(len(samples) * 0.70))
     predictions = []
-    for index in range(cut, len(samples)):
-        train = samples[:index]
-        train_counts = Counter(row["outcome"] for row in train)
-        if any(train_counts[label] == 0 for label in CLASSES):
-            continue
-        model = make_model()
-        model.fit([row["features"] for row in train],
-                  [row["outcome"] for row in train])
-        current = samples[index]
-        vector = model.predict_proba([current["features"]])[0]
-        probs = {label: 0.0 for label in CLASSES}
-        for label, value in zip(model.classes_, vector):
-            probs[label] = float(value)
-        probs = validate_probability_map(probs)
-        predictions.append({"match_id": current["match_id"],
-                            "outcome": current["outcome"], "probs": probs,
-                            "kickoff": current["kickoff"],
-                            "train_n": len(train)})
+    evaluation_groups = []
+    # Les rencontres ayant le même coup d'envoi forment un seul lot.
+    # Aucune étiquette du lot courant ne peut entrer dans l'entraînement
+    # d'une autre rencontre simultanée (fuite temporelle intra-journée).
+    group_start = 0
+    while group_start < len(samples):
+        kickoff = samples[group_start]["kickoff"]
+        group_end = group_start + 1
+        while (group_end < len(samples)
+               and samples[group_end]["kickoff"] == kickoff):
+            group_end += 1
+        if group_start >= cut:
+            train = [row for row in samples if row["kickoff"] < kickoff]
+            train_counts = Counter(row["outcome"] for row in train)
+            if not any(train_counts[label] == 0 for label in CLASSES):
+                model = make_model()
+                model.fit([row["features"] for row in train],
+                          [row["outcome"] for row in train])
+                current_group = samples[group_start:group_end]
+                vectors = model.predict_proba(
+                    [row["features"] for row in current_group]
+                )
+                for current, vector in zip(current_group, vectors):
+                    probs = {label: 0.0 for label in CLASSES}
+                    for label, value in zip(model.classes_, vector):
+                        probs[label] = float(value)
+                    probs = validate_probability_map(probs)
+                    predictions.append({
+                        "match_id": current["match_id"],
+                        "outcome": current["outcome"], "probs": probs,
+                        "kickoff": current["kickoff"], "train_n": len(train)
+                    })
+                evaluation_groups.append({
+                    "kickoff": kickoff.isoformat(),
+                    "train_n": len(train),
+                    "test_group_n": len(current_group),
+                    "match_ids": [row["match_id"] for row in current_group]
+                })
+        group_start = group_end
 
     result["initial_train_n"] = cut
+    result["walk_forward_groups_n"] = len(evaluation_groups)
+    result["walk_forward_groups"] = evaluation_groups
     result["walk_forward_predictions_n"] = len(predictions)
     if len(predictions) < 5:
         result["status"] = "INSUFFICIENT_WALK_FORWARD_PREDICTIONS"

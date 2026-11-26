@@ -165,6 +165,27 @@ class TeamFormTests(unittest.TestCase):
         self.assertEqual(result["validation"], "expanding_window_chronological_70_30")
         self.assertEqual(result["status"], "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED")
 
+
+    def test_simultaneous_fixtures_never_train_on_each_others_results(self):
+        rows = []
+        start = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        for i in range(15):
+            outcome = CLASSES[i % 3]
+            # Les deux derniers matchs partagent exactement le même coup d'envoi.
+            kickoff = start + timedelta(days=10 if i in (10, 11) else i)
+            rows.append({
+                "match_id": str(i), "kickoff": kickoff,
+                "outcome": outcome, "features": [float(i % 4)] * 8,
+            })
+        result = evaluate(rows, [])
+        simultaneous = next(
+            group for group in result["walk_forward_groups"]
+            if set(group["match_ids"]) == {"10", "11"}
+        )
+        self.assertEqual(simultaneous["test_group_n"], 2)
+        self.assertEqual(simultaneous["train_n"], 10)
+        self.assertEqual(result["walk_forward_predictions_n"], 5)
+
     def test_final_pilot_model_accepts_singleton_class_without_claiming_cv(self):
         rows = []
         outcomes = ["HOME"] + ["DRAW"] * 9 + ["AWAY"] * 5
