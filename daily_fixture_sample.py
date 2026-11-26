@@ -21,6 +21,8 @@ from goal_markets import predict_goal_markets
 OUT = Path("reports/todays_sample_predictions.csv")
 DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
 MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
+# Garde-fou provisoire : le modele experimental ne pese que 20% face au marche.
+MODEL_BLEND_WEIGHT = 0.20
 
 
 def select_daily_fixtures(fixtures, now=None):
@@ -99,6 +101,26 @@ def extract_market_snapshot(fixture, now=None, max_age_minutes=MAX_MARKET_SNAPSH
     }, market_probs)
 
 
+def market_anchored_probabilities(model_probs, market_probs, model_weight=MODEL_BLEND_WEIGHT):
+    """Consensus prudent; conserve les probabilites brutes ailleurs pour audit.
+
+    Le marche pese 80% tant que le modele n'est pas valide/calibre. Sans cote
+    pre-match fraiche, aucune fusion n'est effectuee.
+    """
+    model_probs = validate_probability_map(model_probs)
+    if market_probs is None:
+        return model_probs.copy()
+    if not 0.0 <= model_weight <= 1.0:
+        raise ValueError("model_weight doit etre compris entre 0 et 1")
+    market_probs = validate_probability_map(market_probs)
+    blended = {
+        label: model_weight * model_probs[label]
+        + (1.0 - model_weight) * market_probs[label]
+        for label in CLASSES
+    }
+    return validate_probability_map(blended)
+
+
 def main():
     if not MODEL_PATH.exists():
         raise SystemExit("MODELE ABSENT : executer team_form_model_experiment.py avant ce script.")
@@ -131,17 +153,28 @@ def main():
         home_key, away_key = split_team_keys(fixture["match_name"])
         goals = predict_goal_markets(history, home_key, away_key, fixture["kickoff"])
         market_fields, market_probs = extract_market_snapshot(fixture, now)
+        # Le grand ecart reste mesure sur le modele brut; le consensus ne masque pas l'anomalie.
         comparison_status = market_comparison_status(probs, market_probs)
+        consensus = market_anchored_probabilities(probs, market_probs)
+        raw_gap_pp = round(max(abs(probs[label] - market_probs[label])
+            for label in CLASSES) * 100, 2) if market_probs else ""
+        consensus_gap_pp = round(max(abs(consensus[label] - market_probs[label])
+            for label in CLASSES) * 100, 2) if market_probs else ""
         row = {
             "competition_name": fixture.get("competition_name") or "Championnat non renseigné",
             "generated_at_utc": now.isoformat(),
             "match_id": fixture["match_id"],
             "match_name": fixture["match_name"],
             "kickoff_utc": fixture["kickoff"].isoformat(),
-            "prediction_1x2": max(probs, key=probs.get),
-            "prob_home": round(probs["HOME"], 6),
-            "prob_draw": round(probs["DRAW"], 6),
-            "prob_away": round(probs["AWAY"], 6),
+            "prediction_1x2": max(consensus, key=consensus.get),
+            "prob_home": round(consensus["HOME"], 6),
+            "prob_draw": round(consensus["DRAW"], 6),
+            "prob_away": round(consensus["AWAY"], 6),
+            "model_raw_prob_home": round(probs["HOME"], 6),
+            "model_raw_prob_draw": round(probs["DRAW"], 6),
+            "model_raw_prob_away": round(probs["AWAY"], 6),
+            "consensus_method": "80_PERCENT_MARKET_20_PERCENT_EXPERIMENTAL_MODEL" if market_probs else "MODEL_ONLY_NO_FRESH_MARKET",
+            "consensus_market_gap_pp": consensus_gap_pp,
             "balanced_prediction": max(balanced, key=balanced.get) if balanced else "",
             "balanced_prob_home": round(balanced["HOME"], 6) if balanced else "",
             "balanced_prob_draw": round(balanced["DRAW"], 6) if balanced else "",
@@ -159,8 +192,7 @@ def main():
             "form_last5_home_json": json.dumps(fixture.get("form_last5_home", []), ensure_ascii=False),
             "form_last5_away_json": json.dumps(fixture.get("form_last5_away", []), ensure_ascii=False),
             **market_fields,
-            "max_abs_edge_pp": round(max(abs(probs[label] - market_probs[label])
-                for label in CLASSES) * 100, 2) if market_probs else "",
+            "max_abs_edge_pp": raw_gap_pp,
             "comparison_status": comparison_status,
             "action_status": prediction_action_status(
                 fixture["history_quality"], comparison_status,
@@ -184,7 +216,7 @@ def main():
             "web_research_checked_at_utc": fixture.get("web_research", {}).get("checked_at_utc", ""),
             "web_research_items_json": json.dumps(fixture.get("web_research", {}).get("items", []), ensure_ascii=False),
             "feature_definition": payload.get("feature_definition", ""),
-            "note": "Predictions exploratoires; probabilites normalisees, non calibrees; la variante class_weighted est diagnostique uniquement.",
+            "note": "Consensus indicatif 80% marche / 20% modele experimental non calibre; probabilites brutes conservees; tout grand ecart brut reste NO BET.",
         }
         rows.append(row)
 
@@ -192,6 +224,8 @@ def main():
     fields = list(rows[0]) if rows else [
         "generated_at_utc", "match_id", "competition_name", "match_name", "kickoff_utc",
         "prediction_1x2", "prob_home", "prob_draw", "prob_away",
+        "model_raw_prob_home", "model_raw_prob_draw", "model_raw_prob_away",
+        "consensus_method", "consensus_market_gap_pp",
         "balanced_prediction", "balanced_prob_home", "balanced_prob_draw",
         "balanced_prob_away", "training_n", "training_classes",
         "model_status", "validation_status", "calibration_status",
