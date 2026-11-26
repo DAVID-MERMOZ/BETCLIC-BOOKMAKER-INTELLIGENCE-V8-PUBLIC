@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "f261a33348223553dc1b03dae7c0101461bb64b6baa6a1ea700ec2149c5b8740",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -23,13 +14,13 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 2.08,
           "lambda_home": 1.37,
-          "market_prob_away": 0.3,
-          "market_prob_draw": 0.237,
-          "market_prob_home": 0.463,
+          "market_prob_away": 0.312,
+          "market_prob_draw": 0.233,
+          "market_prob_home": 0.455,
           "market_status": "AVAILABLE",
           "match_key": "1273289616928768",
           "match_name": "Crystal Palace - Real Sociedad",
-          "max_abs_edge_pp": 43.0,
+          "max_abs_edge_pp": 42.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.859,
           "over_2_5": 0.671,
@@ -110,13 +101,13 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.16,
           "lambda_home": 1.47,
-          "market_prob_away": 0.08,
-          "market_prob_draw": 0.153,
-          "market_prob_home": 0.767,
+          "market_prob_away": 0.085,
+          "market_prob_draw": 0.159,
+          "market_prob_home": 0.756,
           "market_status": "AVAILABLE",
           "match_key": "1273290452647936",
           "match_name": "Sunderland - Jagiellonia Bialystok",
-          "max_abs_edge_pp": 39.3,
+          "max_abs_edge_pp": 38.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.737,
           "over_2_5": 0.487,
@@ -216,8 +207,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-26T18:12:26.744164+00:00",
-      "signature": "7978639aee3f5a7e1766f09cceb118aa0e7425f58dcfa3d2deb44be0dabf2dbe"
+      "sent_at_utc": "2026-11-26T18:35:40.389387+00:00",
+      "signature": "f261a33348223553dc1b03dae7c0101461bb64b6baa6a1ea700ec2149c5b8740"
     }
   },
   "version": 1
