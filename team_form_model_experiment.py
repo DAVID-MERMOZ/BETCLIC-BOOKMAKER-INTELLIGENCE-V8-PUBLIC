@@ -4,6 +4,7 @@ import json
 import sqlite3
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import joblib
@@ -31,6 +32,7 @@ MODEL_PATH = Path("artifacts/team_form_model.joblib")
 ROLLING_N = 5
 MIN_PRIOR_MATCHES = 3
 MIN_CLASS_COUNT_FOR_LOO = 2
+PREMATCH_TIMEZONE = ZoneInfo("Africa/Douala")
 
 
 def team_form(history, team, kickoff, minimum_matches=MIN_PRIOR_MATCHES):
@@ -91,6 +93,28 @@ def team_form_features(history, team, kickoff, venue, minimum_matches=MIN_PRIOR_
     venue_form = (_summarize_team_matches(venue_rows, key)
                   if len(venue_rows) >= 2 else overall)
     return overall + venue_form
+
+
+
+def team_last_five_details(history, team, kickoff):
+    """Cinq derniers matchs termines avant le coup d'envoi, sans fuite temporelle."""
+    key = team_key(team)
+    prior = [row for row in history if row["date"] < kickoff
+             and (row["home"] == key or row["away"] == key)]
+    prior.sort(key=lambda row: row["date"], reverse=True)
+    details = []
+    for row in prior[:ROLLING_N]:
+        is_home = row["home"] == key
+        gf = row["hg"] if is_home else row["ag"]
+        ga = row["ag"] if is_home else row["hg"]
+        outcome = "W" if gf > ga else "D" if gf == ga else "L"
+        details.append({"date_utc": row["date"].isoformat(),
+                        "opponent": row["away"] if is_home else row["home"],
+                        "venue": "HOME" if is_home else "AWAY",
+                        "score_for": gf, "score_against": ga,
+                        "outcome": outcome,
+                        "points": 3 if outcome == "W" else 1 if outcome == "D" else 0})
+    return details
 
 
 def team_prior_match_count(history, team, kickoff):
@@ -347,18 +371,30 @@ def build_upcoming_dataset(db_path=DB_PATH):
         if hf is None or af is None:
             rejected["no_prior_match_even_with_fallback"] += 1
             continue
+        home_last5 = team_last_five_details(history, home, kickoff)
+        away_last5 = team_last_five_details(history, away, kickoff)
         match_odds = odds_by_match.get(str(match_id), [])
         market = latest_complete_1x2_snapshot(match_odds, name, now)
         market_movement = summarize_1x2_movement(match_odds, name, now)
-        web_research = research_match_news(
-            name, market_movement.get("max_step_odds_change_pct", market_movement.get("odds_change_pct", {}))
-        ) if market_movement.get("status") == "MOVEMENT_MEASURED" else {
-            "status": "NOT_TRIGGERED", "triggered_moves": {}, "items": []
-        }
+        is_today_local = kickoff.astimezone(PREMATCH_TIMEZONE).date() == now.astimezone(PREMATCH_TIMEZONE).date()
+        movements = market_movement.get(
+            "max_step_odds_change_pct", market_movement.get("odds_change_pct", {})
+        )
+        if is_today_local:
+            # Recherche limitee aux matchs du jour pour preserver la duree du pipeline.
+            web_research = research_match_news(name, movements, timeout=5, force=True)
+        elif market_movement.get("status") == "MOVEMENT_MEASURED":
+            web_research = research_match_news(name, movements, timeout=5)
+        else:
+            web_research = {
+                "status": "NOT_TRIGGERED", "triggered_moves": {},
+                "checked_at_utc": datetime.now(timezone.utc).isoformat(), "items": []
+            }
         upcoming.append({"match_id": str(match_id), "match_name": name,
                          "competition_name": competition_name or "Championnat non renseigné",
 "kickoff": kickoff, "features": (team_form_features(history, home, kickoff, "HOME", minimum_matches=1) + team_form_features(history, away, kickoff, "AWAY", minimum_matches=1)),
                          "form_matches_home": home_n, "form_matches_away": away_n,
+                         "form_last5_home": home_last5, "form_last5_away": away_last5,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
                                             else "LOW_HISTORY_EXPERIMENTAL",
                          "market_snapshot": market,

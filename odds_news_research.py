@@ -52,18 +52,19 @@ def filter_recent_news_items(items, now=None, max_age_days=MAX_NEWS_AGE_DAYS):
     return recent
 
 
-def research_match_news(match_name, movements, timeout=12, max_items=5):
+def research_match_news(match_name, movements, timeout=12, max_items=5, force=False):
     """Cherche des articles recents associes au match et au mouvement observe."""
     triggered = significant_odds_moves(movements)
     checked_at_dt = datetime.now(timezone.utc)
     checked_at = checked_at_dt.isoformat()
-    if not triggered:
+    if not triggered and not force:
         return {"status": "NOT_TRIGGERED", "triggered_moves": {},
                 "checked_at_utc": checked_at, "items": []}
 
     query = (
         f'"{match_name}" football (injury OR injured OR lineup OR team news '
-        "OR suspension OR postponed OR manager OR weather)"
+        "OR suspension OR unavailable OR motivation OR qualification OR title "
+        "OR relegation OR fatigue OR rotation OR manager OR weather OR pitch)"
     )
     url = GOOGLE_NEWS_RSS.format(query=quote_plus(query))
     request = Request(url, headers={"User-Agent": "Mozilla/5.0 BETCLIC-V8.1 research"})
@@ -92,6 +93,7 @@ def research_match_news(match_name, movements, timeout=12, max_items=5):
         items = filter_recent_news_items(items, now=checked_at_dt)
         return {
             "status": "RESULTS_FOUND" if items else "NO_RECENT_RESULTS",
+            "research_mode": "FORCED_PREMATCH_CONTEXT" if force else "ODDS_MOVEMENT_TRIGGERED",
             "triggered_moves": triggered, "query": query,
             "checked_at_utc": checked_at, "items": items,
         }

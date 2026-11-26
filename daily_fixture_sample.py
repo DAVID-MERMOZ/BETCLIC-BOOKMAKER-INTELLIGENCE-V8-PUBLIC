@@ -1,5 +1,6 @@
 """Predictions quotidiennes dynamiques depuis les fixtures Betclic en base."""
 import csv
+import json
 from collections import Counter
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -16,6 +17,7 @@ from team_form_model_experiment import (
 )
 from goal_markets import predict_goal_markets
 
+# Le rapport quotidien conserve les cinq derniers resultats et les sources contextuelles.
 OUT = Path("reports/todays_sample_predictions.csv")
 DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
 MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
@@ -154,6 +156,8 @@ def main():
             "history_quality": fixture["history_quality"],
             "form_matches_home": fixture["form_matches_home"],
             "form_matches_away": fixture["form_matches_away"],
+            "form_last5_home_json": json.dumps(fixture.get("form_last5_home", []), ensure_ascii=False),
+            "form_last5_away_json": json.dumps(fixture.get("form_last5_away", []), ensure_ascii=False),
             **market_fields,
             "max_abs_edge_pp": round(max(abs(probs[label] - market_probs[label])
                 for label in CLASSES) * 100, 2) if market_probs else "",
@@ -177,6 +181,8 @@ def main():
             "market_movement_status": fixture.get("market_movement", {}).get("status", "NO_DATA"),
             "market_movement_pattern": fixture.get("market_movement", {}).get("pattern", ""),
             "web_research_status": fixture.get("web_research", {}).get("status", "NOT_TRIGGERED"),
+            "web_research_checked_at_utc": fixture.get("web_research", {}).get("checked_at_utc", ""),
+            "web_research_items_json": json.dumps(fixture.get("web_research", {}).get("items", []), ensure_ascii=False),
             "feature_definition": payload.get("feature_definition", ""),
             "note": "Predictions exploratoires; probabilites normalisees, non calibrees; la variante class_weighted est diagnostique uniquement.",
         }
