@@ -5,6 +5,7 @@ from team_form_model_experiment import (team_form, evaluate, fit_final_model, te
                                         latest_complete_1x2_snapshot, prediction_action_status,
                                         team_form_features, _history_from_provider_rows)
 from baseline_market_evaluation import CLASSES
+from daily_fixture_sample import market_anchored_probabilities
 
 
 class TeamFormTests(unittest.TestCase):
