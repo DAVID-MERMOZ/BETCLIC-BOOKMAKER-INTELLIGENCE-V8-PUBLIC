@@ -17,6 +17,7 @@ from team_form_model_experiment import (
 )
 from goal_markets import predict_goal_markets
 
+# Le rapport quotidien conserve les cinq derniers resultats et les sources contextuelles.
 OUT = Path("reports/todays_sample_predictions.csv")
 DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
 MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
