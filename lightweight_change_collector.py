@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import csv
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_DB = Path("data/betclic_history.db")
