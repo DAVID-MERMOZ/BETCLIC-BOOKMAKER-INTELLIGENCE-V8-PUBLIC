@@ -184,7 +184,6 @@ class TeamFormTests(unittest.TestCase):
         )
         self.assertEqual(simultaneous["test_group_n"], 2)
         self.assertEqual(simultaneous["train_n"], 10)
-        self.assertNotIn("10", simultaneous["match_ids"][:0])
         self.assertEqual(result["walk_forward_predictions_n"], 5)
 
     def test_final_pilot_model_accepts_singleton_class_without_claiming_cv(self):
