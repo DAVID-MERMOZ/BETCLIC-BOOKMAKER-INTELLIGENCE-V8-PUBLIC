@@ -93,6 +93,28 @@ def team_form_features(history, team, kickoff, venue, minimum_matches=MIN_PRIOR_
     return overall + venue_form
 
 
+
+def team_last_five_details(history, team, kickoff):
+    """Cinq derniers matchs termines avant le coup d'envoi, sans fuite temporelle."""
+    key = team_key(team)
+    prior = [row for row in history if row["date"] < kickoff
+             and (row["home"] == key or row["away"] == key)]
+    prior.sort(key=lambda row: row["date"], reverse=True)
+    details = []
+    for row in prior[:ROLLING_N]:
+        is_home = row["home"] == key
+        gf = row["hg"] if is_home else row["ag"]
+        ga = row["ag"] if is_home else row["hg"]
+        outcome = "W" if gf > ga else "D" if gf == ga else "L"
+        details.append({"date_utc": row["date"].isoformat(),
+                        "opponent": row["away"] if is_home else row["home"],
+                        "venue": "HOME" if is_home else "AWAY",
+                        "score_for": gf, "score_against": ga,
+                        "outcome": outcome,
+                        "points": 3 if outcome == "W" else 1 if outcome == "D" else 0})
+    return details
+
+
 def team_prior_match_count(history, team, kickoff):
     key = team_key(team)
     return min(ROLLING_N, sum(
@@ -347,6 +369,8 @@ def build_upcoming_dataset(db_path=DB_PATH):
         if hf is None or af is None:
             rejected["no_prior_match_even_with_fallback"] += 1
             continue
+        home_last5 = team_last_five_details(history, home, kickoff)
+        away_last5 = team_last_five_details(history, away, kickoff)
         match_odds = odds_by_match.get(str(match_id), [])
         market = latest_complete_1x2_snapshot(match_odds, name, now)
         market_movement = summarize_1x2_movement(match_odds, name, now)
@@ -359,6 +383,7 @@ def build_upcoming_dataset(db_path=DB_PATH):
                          "competition_name": competition_name or "Championnat non renseigné",
 "kickoff": kickoff, "features": (team_form_features(history, home, kickoff, "HOME", minimum_matches=1) + team_form_features(history, away, kickoff, "AWAY", minimum_matches=1)),
                          "form_matches_home": home_n, "form_matches_away": away_n,
+                         "form_last5_home": home_last5, "form_last5_away": away_last5,
                          "history_quality": "STANDARD_3_PLUS" if min(home_n, away_n) >= MIN_PRIOR_MATCHES
                                             else "LOW_HISTORY_EXPERIMENTAL",
                          "market_snapshot": market,
