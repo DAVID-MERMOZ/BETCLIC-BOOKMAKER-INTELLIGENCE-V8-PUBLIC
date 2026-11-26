@@ -1,17 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "signature": "f1b143a03963c2075fe3a53fbbf2fad555caf1efcbc05565a7703c185c35e8b0",
-      "total_parts": 5
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -171,13 +159,13 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.43,
           "lambda_home": 1.85,
-          "market_prob_away": 0.113,
-          "market_prob_draw": 0.156,
-          "market_prob_home": 0.731,
+          "market_prob_away": 0.117,
+          "market_prob_draw": 0.155,
+          "market_prob_home": 0.728,
           "market_status": "AVAILABLE",
           "match_key": "1273289940926464",
           "match_name": "Hoffenheim - Sturm Graz",
-          "max_abs_edge_pp": 38.1,
+          "max_abs_edge_pp": 37.9,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.839,
           "over_2_5": 0.637,
@@ -345,13 +333,13 @@
           "kickoff_utc": "2026-11-26T15:30:00+00:00",
           "lambda_away": 1.68,
           "lambda_home": 1.68,
-          "market_prob_away": 0.287,
+          "market_prob_away": 0.294,
           "market_prob_draw": 0.272,
-          "market_prob_home": 0.441,
+          "market_prob_home": 0.434,
           "market_status": "AVAILABLE",
           "match_key": "1275895917584384",
           "match_name": "Kairat Almaty - Mjallby AIF",
-          "max_abs_edge_pp": 26.5,
+          "max_abs_edge_pp": 25.8,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.849,
           "over_2_5": 0.653,
@@ -432,13 +420,13 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.24,
           "lambda_home": 1.87,
-          "market_prob_away": 0.681,
+          "market_prob_away": 0.676,
           "market_prob_draw": 0.182,
-          "market_prob_home": 0.137,
+          "market_prob_home": 0.142,
           "market_status": "AVAILABLE",
           "match_key": "1276179683213312",
           "match_name": "Borac Banja Luka - Atalanta",
-          "max_abs_edge_pp": 32.6,
+          "max_abs_edge_pp": 32.0,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.817,
           "over_2_5": 0.601,
@@ -461,13 +449,13 @@
           "kickoff_utc": "2026-11-26T15:05:00+00:00",
           "lambda_away": 1.49,
           "lambda_home": 1.49,
-          "market_prob_away": 0.549,
-          "market_prob_draw": 0.231,
-          "market_prob_home": 0.22,
+          "market_prob_away": 0.53,
+          "market_prob_draw": 0.241,
+          "market_prob_home": 0.229,
           "market_status": "AVAILABLE",
           "match_key": "1280221596622848",
           "match_name": "Abha - Al-Shabab",
-          "max_abs_edge_pp": 6.0,
+          "max_abs_edge_pp": 4.0,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.798,
           "over_2_5": 0.572,
@@ -490,13 +478,13 @@
           "kickoff_utc": "2026-11-26T14:25:00+00:00",
           "lambda_away": 1.37,
           "lambda_home": 1.87,
-          "market_prob_away": 0.342,
+          "market_prob_away": 0.333,
           "market_prob_draw": 0.257,
-          "market_prob_home": 0.4,
+          "market_prob_home": 0.409,
           "market_status": "AVAILABLE",
           "match_key": "1282470401032192",
           "match_name": "Al-Fateh - Al-Riyadh",
-          "max_abs_edge_pp": 8.9,
+          "max_abs_edge_pp": 8.0,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.834,
           "over_2_5": 0.628,
@@ -509,8 +497,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-26T11:31:48.059228+00:00",
-      "signature": "7d899a05fc77cd233069c7f42a63e43c0387c444de45fbd78702253923735b81"
+      "sent_at_utc": "2026-11-26T12:38:13.761407+00:00",
+      "signature": "f1b143a03963c2075fe3a53fbbf2fad555caf1efcbc05565a7703c185c35e8b0"
     }
   },
   "version": 1
