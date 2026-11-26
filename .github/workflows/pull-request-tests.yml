@@ -22,5 +22,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install scikit-learn
+          pip install git+https://github.com/TapsHTS/betclic-api.git
       - name: Run unit tests (no private DB or secrets)
         run: python -m unittest discover -s tests -v
