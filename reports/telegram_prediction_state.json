@@ -1,17 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ],
-      "signature": "f831431ea27a9dcba498ff27713c4372d2d7c5f4688eba08edf90fd165845cc8",
-      "total_parts": 5
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -432,13 +420,13 @@
           "kickoff_utc": "2026-11-26T20:00:00+00:00",
           "lambda_away": 1.24,
           "lambda_home": 1.87,
-          "market_prob_away": 0.651,
-          "market_prob_draw": 0.195,
-          "market_prob_home": 0.154,
+          "market_prob_away": 0.66,
+          "market_prob_draw": 0.192,
+          "market_prob_home": 0.147,
           "market_status": "AVAILABLE",
           "match_key": "1276179683213312",
           "match_name": "Borac Banja Luka - Atalanta",
-          "max_abs_edge_pp": 29.6,
+          "max_abs_edge_pp": 30.5,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.817,
           "over_2_5": 0.601,
@@ -538,8 +526,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-25T23:30:45.062474+00:00",
-      "signature": "3939e8f371191fc80f0009b5361d9acec17269c6ea79b919e297f442578757c3"
+      "sent_at_utc": "2026-11-26T00:25:30.222315+00:00",
+      "signature": "f831431ea27a9dcba498ff27713c4372d2d7c5f4688eba08edf90fd165845cc8"
     }
   },
   "version": 1
