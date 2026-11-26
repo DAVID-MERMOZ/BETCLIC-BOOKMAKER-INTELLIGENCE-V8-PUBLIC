@@ -30,7 +30,7 @@ permissions:
 jobs:
   pilot:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Recuperer le code
         uses: actions/checkout@v4
@@ -72,6 +72,7 @@ jobs:
         run: python model_readiness_audit.py
 
       - name: Actualiser les fixtures et cotes Betclic avant les predictions
+        timeout-minutes: 15
         run: python betclic_probe.py
 
       - name: Executer les tests
