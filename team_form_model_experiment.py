@@ -18,6 +18,7 @@ from match_results_report import norm as canonical_team_norm, squad_profile, spl
 from goal_markets import predict_goal_markets
 from odds_movement import summarize_1x2_movement
 from odds_news_research import research_match_news
+from prediction_feedback_learning import apply_calibrator, load_and_fit
 
 
 def team_key(name):
@@ -466,6 +467,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     print("Couverture des classes :", dict(counts))
     print("Validation croisee :", evaluation_status or "non executee")
     print("Statut du modele :", pilot_status)
+    feedback = load_and_fit(db_path)
     upcoming, rejected = build_upcoming_dataset(db_path)
     history_for_goals = load_history_from_db(db_path)
     predictions = []
@@ -475,6 +477,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
             probs = {c: 0.0 for c in CLASSES}
             for label, p in zip(model.classes_, vector):
                 probs[label] = float(p)
+            probs = apply_calibrator(probs, feedback)
             probs = validate_probability_map(probs)
             goal_probs = predict_goal_markets(history_for_goals, *split_team_keys(row["match_name"]), row["kickoff"])
             predictions.append({**row, "probs": probs,
@@ -485,6 +488,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
         writer = csv.DictWriter(f, fieldnames=[
             "match_id", "competition_name", "match_name", "kickoff_utc", "prediction",
             "prob_home", "prob_draw", "prob_away", "model_status",
+            "feedback_status", "feedback_history_n",
             "form_matches_home", "form_matches_away", "history_quality",
             "market_status", "market_snapshot_utc", "market_prob_home",
             "market_prob_draw", "market_prob_away", "edge_home_pp",
@@ -501,6 +505,8 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
                 "prob_draw": round(row["probs"]["DRAW"], 6),
                 "prob_away": round(row["probs"]["AWAY"], 6),
                 "model_status": pilot_status,
+                "feedback_status": feedback["status"]["status"],
+                "feedback_history_n": feedback["status"]["history_n"],
                 "form_matches_home": row["form_matches_home"],
                 "form_matches_away": row["form_matches_away"],
                 "history_quality": row["history_quality"],
@@ -558,6 +564,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     joblib.dump({"model": model, "classes": list(model.classes_),
                  "feature_definition": "16 total: per team overall_form[points,gf,ga,gd] + relevant_venue_form[points,gf,ga,gd]; venue_form falls back to overall when fewer than 2 venue matches",
                   "calibration_status": "DESCRIPTIVE_ECE_ONLY_NOT_CALIBRATED",
+                 "feedback_learning": feedback["status"],
                  "training_n": len(samples),
                  "trained_at_utc": datetime.now(timezone.utc).isoformat(),
                  "class_counts": dict(counts),
@@ -568,6 +575,7 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     print("Matchs futurs avec historique suffisant :", len(upcoming))
     print("Matchs futurs exclus :", rejected)
     print("Predictions generees :", len(predictions))
+    print("Correction par historique :", feedback["status"]["status"])
     print("CSV predictions :", PREDICTIONS_PATH)
     print("Modele entraine sur l'ensemble admissible :", MODEL_PATH)
     return True
