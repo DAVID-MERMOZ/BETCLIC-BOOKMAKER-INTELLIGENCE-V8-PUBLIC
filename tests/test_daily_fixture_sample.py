@@ -2,11 +2,17 @@ import unittest
 from datetime import datetime, timezone
 
 from daily_fixture_sample import (
-    extract_market_snapshot, market_anchored_probabilities, select_daily_fixtures,
+    CONSENSUS_NOTE, MODEL_BLEND_WEIGHT, extract_market_snapshot,
+    market_anchored_probabilities, select_daily_fixtures,
 )
 
 
 class DailyFixtureSampleTests(unittest.TestCase):
+    def test_consensus_note_matches_configured_market_model_weights(self):
+        self.assertEqual(MODEL_BLEND_WEIGHT, 0.15)
+        self.assertIn("85% marche / 15% modele experimental", CONSENSUS_NOTE)
+        self.assertNotIn("80% marche / 20%", CONSENSUS_NOTE)
+
     def test_selects_only_the_current_douala_calendar_day(self):
         now = datetime(2026, 11, 24, 6, 30, tzinfo=timezone.utc)
         today = {"match_id": "today", "kickoff": datetime(2026, 11, 24, 17, 30, tzinfo=timezone.utc)}

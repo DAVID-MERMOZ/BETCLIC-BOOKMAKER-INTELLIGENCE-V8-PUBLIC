@@ -21,8 +21,12 @@ from goal_markets import predict_goal_markets
 OUT = Path("reports/todays_sample_predictions.csv")
 DAILY_TIMEZONE = ZoneInfo("Africa/Douala")
 MAX_MARKET_SNAPSHOT_AGE_MINUTES = 120
-# Garde-fou provisoire : le modele experimental ne pese que 20% face au marche.
+# Garde-fou provisoire : le modele experimental ne pese que 15% face au marche.
 MODEL_BLEND_WEIGHT = 0.15
+CONSENSUS_NOTE = (
+    "Consensus indicatif 85% marche / 15% modele experimental non calibre; "
+    "probabilites brutes conservees; tout grand ecart brut reste NO BET."
+)
 
 
 def select_daily_fixtures(fixtures, now=None):
@@ -216,7 +220,7 @@ def main():
             "web_research_checked_at_utc": fixture.get("web_research", {}).get("checked_at_utc", ""),
             "web_research_items_json": json.dumps(fixture.get("web_research", {}).get("items", []), ensure_ascii=False),
             "feature_definition": payload.get("feature_definition", ""),
-            "note": "Consensus indicatif 80% marche / 20% modele experimental non calibre; probabilites brutes conservees; tout grand ecart brut reste NO BET.",
+            "note": CONSENSUS_NOTE,
         }
         rows.append(row)
 
