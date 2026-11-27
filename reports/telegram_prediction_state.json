@@ -1,15 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2
-      ],
-      "signature": "7ddaeadcc35ef371f2edf9b2822de2aea60784c797ac0fa9263614455caa96f0",
-      "total_parts": 3
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -344,12 +334,12 @@
           "lambda_away": null,
           "lambda_home": null,
           "market_prob_away": 0.185,
-          "market_prob_draw": 0.241,
-          "market_prob_home": 0.574,
+          "market_prob_draw": 0.248,
+          "market_prob_home": 0.567,
           "market_status": "AVAILABLE",
           "match_key": "1291229976367104",
           "match_name": "Birkirkara FC - Mosta FC",
-          "max_abs_edge_pp": 18.7,
+          "max_abs_edge_pp": 17.9,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": null,
           "over_2_5": null,
@@ -357,13 +347,13 @@
           "prediction": "HOME",
           "prediction_1x2": "HOME",
           "prob_away": 0.206,
-          "prob_draw": 0.248,
-          "prob_home": 0.546,
+          "prob_draw": 0.254,
+          "prob_home": 0.54,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-27T14:58:10.036880+00:00",
-      "signature": "31436515418f166c717906b110839694bd292959759e15c6ba1d32874d36e728"
+      "sent_at_utc": "2026-11-27T15:14:31.018285+00:00",
+      "signature": "7ddaeadcc35ef371f2edf9b2822de2aea60784c797ac0fa9263614455caa96f0"
     }
   },
   "version": 1
