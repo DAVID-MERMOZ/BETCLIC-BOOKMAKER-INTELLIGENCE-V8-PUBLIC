@@ -200,17 +200,28 @@ def fit_feedback_calibrator(rows):
 
 
 def apply_calibrator(probs, fitted):
-    """Apply validated calibration; otherwise return original probabilities."""
+    """Apply validated calibration and preserve the caller's probability shape.
+
+    The prediction pipeline passes a {HOME, DRAW, AWAY} mapping; feedback
+    training helpers/tests may pass a three-item sequence. Never turn a
+    mapping into a list of its keys.
+    """
+    is_mapping = isinstance(probs, dict)
+    raw = [float(probs[label]) for label in CLASSES] if is_mapping else list(probs)
+
+    def restore(values):
+        return dict(zip(CLASSES, values)) if is_mapping else list(values)
+
     model = fitted.get("model") if fitted else None
     if model is None:
-        return list(probs)
-    vector = model.predict_proba([log_features(probs)])[0]
+        return restore(raw)
+    vector = model.predict_proba([log_features(raw)])[0]
     index = {label: i for i, label in enumerate(model.classes_)}
     calibrated = [float(vector[index[label]]) for label in CLASSES]
     total = sum(calibrated)
     if not math.isfinite(total) or total <= 0:
-        return list(probs)
-    return [p / total for p in calibrated]
+        return restore(raw)
+    return restore([p / total for p in calibrated])
 
 
 def write_status(status, output=STATUS_PATH):

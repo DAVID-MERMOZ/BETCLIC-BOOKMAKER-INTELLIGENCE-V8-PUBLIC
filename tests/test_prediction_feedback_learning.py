@@ -42,6 +42,18 @@ class PredictionFeedbackLearningTests(unittest.TestCase):
         raw = [0.6, 0.25, 0.15]
         self.assertEqual(apply_calibrator(raw, fitted), raw)
 
+    def test_disabled_calibrator_preserves_probability_mapping(self):
+        raw = {"HOME": 0.5, "DRAW": 0.3, "AWAY": 0.2}
+        fitted = fit_feedback_calibrator(make_rows(30))
+        self.assertEqual(apply_calibrator(raw, fitted), raw)
+
+    def test_active_calibrator_preserves_probability_mapping(self):
+        raw = {"HOME": 0.8, "DRAW": 0.1, "AWAY": 0.1}
+        fitted = fit_feedback_calibrator(make_rows())
+        calibrated = apply_calibrator(raw, fitted)
+        self.assertEqual(set(calibrated), set(CLASSES))
+        self.assertAlmostEqual(sum(calibrated.values()), 1.0, places=9)
+
     def test_calibrator_activates_only_after_holdout_gain(self):
         fitted = fit_feedback_calibrator(make_rows())
         self.assertIsNotNone(fitted["model"])
