@@ -1,16 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "signature": "2910c579615de92ace3738119bd9957eac3809375f75deed3874e363cebd5b71",
-      "total_parts": 4
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -83,22 +72,22 @@
           "kickoff_utc": "2026-11-27T12:15:00+00:00",
           "lambda_away": 1.29,
           "lambda_home": 1.82,
-          "market_prob_away": 0.282,
-          "market_prob_draw": 0.253,
-          "market_prob_home": 0.465,
+          "market_prob_away": 0.284,
+          "market_prob_draw": 0.255,
+          "market_prob_home": 0.461,
           "market_status": "AVAILABLE",
           "match_key": "1280221635424256",
           "match_name": "Al Kholood - Al-Khaleej",
-          "max_abs_edge_pp": 25.6,
+          "max_abs_edge_pp": 25.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.817,
           "over_2_5": 0.602,
           "over_3_5": 0.378,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.292,
-          "prob_draw": 0.281,
-          "prob_home": 0.427,
+          "prob_away": 0.294,
+          "prob_draw": 0.283,
+          "prob_home": 0.424,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -315,22 +304,22 @@
           "kickoff_utc": "2026-11-27T17:30:00+00:00",
           "lambda_away": 1.56,
           "lambda_home": 1.7,
-          "market_prob_away": 0.222,
-          "market_prob_draw": 0.287,
-          "market_prob_home": 0.492,
+          "market_prob_away": 0.214,
+          "market_prob_draw": 0.293,
+          "market_prob_home": 0.493,
           "market_status": "AVAILABLE",
           "match_key": "1289855474606080",
           "match_name": "Stellenbosch FC - TS Galaxy",
-          "max_abs_edge_pp": 20.3,
+          "max_abs_edge_pp": 20.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.837,
           "over_2_5": 0.633,
           "over_3_5": 0.411,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.237,
-          "prob_draw": 0.302,
-          "prob_home": 0.461,
+          "prob_away": 0.231,
+          "prob_draw": 0.307,
+          "prob_home": 0.463,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -392,8 +381,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-26T23:34:18.943176+00:00",
-      "signature": "a78dc84a90c9cbecf11f7ec0b6e5e231d0ad77d77dc4509f2fd93ce14e1eb6ab"
+      "sent_at_utc": "2026-11-27T00:25:06.703643+00:00",
+      "signature": "2910c579615de92ace3738119bd9957eac3809375f75deed3874e363cebd5b71"
     }
   },
   "version": 1
