@@ -1,15 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2
-      ],
-      "signature": "406734bb71cc3986c46f93b7251ab7981e85b0f9b7931b84fc55130632a979b0",
-      "total_parts": 3
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -24,22 +14,22 @@
           "kickoff_utc": "2026-11-27T20:00:00+00:00",
           "lambda_away": 1.34,
           "lambda_home": 1.5,
-          "market_prob_away": 0.33,
-          "market_prob_draw": 0.264,
-          "market_prob_home": 0.406,
+          "market_prob_away": 0.337,
+          "market_prob_draw": 0.263,
+          "market_prob_home": 0.4,
           "market_status": "AVAILABLE",
           "match_key": "1274386183106560",
           "match_name": "Nottingham Forest - Chelsea",
-          "max_abs_edge_pp": 22.9,
+          "max_abs_edge_pp": 23.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.776,
           "over_2_5": 0.541,
           "over_3_5": 0.318,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.319,
-          "prob_draw": 0.299,
-          "prob_home": 0.382,
+          "prob_away": 0.325,
+          "prob_draw": 0.297,
+          "prob_home": 0.377,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -362,8 +352,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-27T12:31:53.290571+00:00",
-      "signature": "21c3a2a050777bab833e90a6f007d430a4a33fc4a35835483140620abd209062"
+      "sent_at_utc": "2026-11-27T13:37:43.029316+00:00",
+      "signature": "406734bb71cc3986c46f93b7251ab7981e85b0f9b7931b84fc55130632a979b0"
     }
   },
   "version": 1
