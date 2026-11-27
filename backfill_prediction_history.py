@@ -77,7 +77,7 @@ def artifact_names(run_id):
                 f"repos/{PUBLIC_REPO}/actions/runs/{run_id}/artifacts")
     artifacts = []
     for line in output.splitlines():
-        parts = line.split("\\t")
+        parts = line.split("\t")
         if len(parts) == 2 and parts[0].strip() and parts[1].strip():
             artifacts.append((parts[0].strip(), parts[1].strip()))
     return artifacts
