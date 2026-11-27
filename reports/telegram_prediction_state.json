@@ -1,16 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "signature": "affc451da95e06968a12341c1844e2f0ac1eb998b3c01c4d491f8f81af025493",
-      "total_parts": 4
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -141,22 +130,22 @@
           "kickoff_utc": "2026-11-27T19:45:00+00:00",
           "lambda_away": 1.57,
           "lambda_home": 1.44,
-          "market_prob_away": 0.46,
-          "market_prob_draw": 0.273,
-          "market_prob_home": 0.267,
+          "market_prob_away": 0.45,
+          "market_prob_draw": 0.274,
+          "market_prob_home": 0.276,
           "market_status": "AVAILABLE",
           "match_key": "1287166254682112",
           "match_name": "Glentoran - Larne",
-          "max_abs_edge_pp": 5.7,
+          "max_abs_edge_pp": 5.8,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.802,
           "over_2_5": 0.579,
           "over_3_5": 0.355,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
-          "prob_away": 0.462,
-          "prob_draw": 0.265,
-          "prob_home": 0.273,
+          "prob_away": 0.453,
+          "prob_draw": 0.266,
+          "prob_home": 0.281,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -257,22 +246,22 @@
           "kickoff_utc": "2026-11-27T17:00:00+00:00",
           "lambda_away": 1.55,
           "lambda_home": 1.71,
-          "market_prob_away": 0.333,
-          "market_prob_draw": 0.274,
-          "market_prob_home": 0.393,
+          "market_prob_away": 0.329,
+          "market_prob_draw": 0.283,
+          "market_prob_home": 0.388,
           "market_status": "AVAILABLE",
           "match_key": "1288887568695296",
           "match_name": "AEK Larnaca - Apollon Limassol",
-          "max_abs_edge_pp": 8.6,
+          "max_abs_edge_pp": 9.3,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.836,
           "over_2_5": 0.633,
           "over_3_5": 0.411,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.346,
-          "prob_draw": 0.261,
-          "prob_home": 0.393,
+          "prob_away": 0.343,
+          "prob_draw": 0.269,
+          "prob_home": 0.389,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -345,12 +334,12 @@
           "lambda_away": null,
           "lambda_home": null,
           "market_prob_away": 0.185,
-          "market_prob_draw": 0.248,
-          "market_prob_home": 0.567,
+          "market_prob_draw": 0.241,
+          "market_prob_home": 0.574,
           "market_status": "AVAILABLE",
           "match_key": "1291229976367104",
           "match_name": "Birkirkara FC - Mosta FC",
-          "max_abs_edge_pp": 17.9,
+          "max_abs_edge_pp": 18.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": null,
           "over_2_5": null,
@@ -358,8 +347,8 @@
           "prediction": "HOME",
           "prediction_1x2": "HOME",
           "prob_away": 0.206,
-          "prob_draw": 0.254,
-          "prob_home": 0.54,
+          "prob_draw": 0.248,
+          "prob_home": 0.546,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -392,8 +381,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-27T16:28:36.068904+00:00",
-      "signature": "4f0a59768410f4568c6d7930033e03fffff686e912d1f1df59cd1f58a279ae10"
+      "sent_at_utc": "2026-11-27T16:44:56.219498+00:00",
+      "signature": "affc451da95e06968a12341c1844e2f0ac1eb998b3c01c4d491f8f81af025493"
     }
   },
   "version": 1
