@@ -1,14 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1
-      ],
-      "signature": "6214eb745554d3f945fc303a9642e7c3b0a752f72a28af743647fa827ffb8165",
-      "total_parts": 2
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -23,9 +14,9 @@
           "kickoff_utc": "2026-11-27T20:00:00+00:00",
           "lambda_away": 1.34,
           "lambda_home": 1.5,
-          "market_prob_away": 0.345,
+          "market_prob_away": 0.349,
           "market_prob_draw": 0.257,
-          "market_prob_home": 0.397,
+          "market_prob_home": 0.394,
           "market_status": "AVAILABLE",
           "match_key": "1274386183106560",
           "match_name": "Nottingham Forest - Chelsea",
@@ -36,9 +27,9 @@
           "over_3_5": 0.318,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.332,
-          "prob_draw": 0.293,
-          "prob_home": 0.375,
+          "prob_away": 0.335,
+          "prob_draw": 0.292,
+          "prob_home": 0.372,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -52,22 +43,22 @@
           "kickoff_utc": "2026-11-27T19:45:00+00:00",
           "lambda_away": 1.34,
           "lambda_home": 1.59,
-          "market_prob_away": 0.451,
+          "market_prob_away": 0.455,
           "market_prob_draw": 0.272,
-          "market_prob_home": 0.276,
+          "market_prob_home": 0.273,
           "market_status": "AVAILABLE",
           "match_key": "1275279339159552",
           "match_name": "Brest - Paris FC",
-          "max_abs_edge_pp": 13.4,
+          "max_abs_edge_pp": 13.8,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.79,
           "over_2_5": 0.561,
           "over_3_5": 0.337,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
-          "prob_away": 0.431,
+          "prob_away": 0.434,
           "prob_draw": 0.278,
-          "prob_home": 0.29,
+          "prob_home": 0.288,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -197,22 +188,22 @@
           "kickoff_utc": "2026-11-27T19:00:00+00:00",
           "lambda_away": null,
           "lambda_home": null,
-          "market_prob_away": 0.157,
-          "market_prob_draw": 0.225,
-          "market_prob_home": 0.618,
+          "market_prob_away": 0.144,
+          "market_prob_draw": 0.214,
+          "market_prob_home": 0.642,
           "market_status": "AVAILABLE",
           "match_key": "1291229976367104",
           "match_name": "Birkirkara FC - Mosta FC",
-          "max_abs_edge_pp": 23.1,
+          "max_abs_edge_pp": 25.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": null,
           "over_2_5": null,
           "over_3_5": null,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.182,
-          "prob_draw": 0.234,
-          "prob_home": 0.584,
+          "prob_away": 0.171,
+          "prob_draw": 0.225,
+          "prob_home": 0.603,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -245,8 +236,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-27T18:13:35.987477+00:00",
-      "signature": "82a50e6b7cba94102d7430b72df583bdeffa401effe14e8229cb6298cd9de84c"
+      "sent_at_utc": "2026-11-27T18:24:33.726379+00:00",
+      "signature": "6214eb745554d3f945fc303a9642e7c3b0a752f72a28af743647fa827ffb8165"
     }
   },
   "version": 1
