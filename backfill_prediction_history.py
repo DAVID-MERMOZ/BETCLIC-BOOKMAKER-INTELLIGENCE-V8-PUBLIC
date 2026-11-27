@@ -154,17 +154,32 @@ def audit_existing_database(candidate_keys):
             str(match_id) for match_id, variants in confirmed_rows if variants == 1
         }
 
-    candidate_ids = {match_id for _, match_id in candidate_keys}
+    candidate_ids = {str(match_id) for _, match_id in candidate_keys}
+    # Compare both raw IDs and whitespace-trimmed IDs. This is diagnostic only:
+    # no fuzzy/team-name matching and no result link is created automatically.
+    normalized_candidate_ids = {value.strip() for value in candidate_ids}
+    normalized_evaluated_ids = {value.strip() for value in evaluated_ids}
+    normalized_confirmed_ids = {value.strip() for value in unambiguous_confirmed_ids}
     existing_candidate_keys = candidate_keys & existing_keys
+    exact_confirmed_overlap = candidate_ids & unambiguous_confirmed_ids
+    trimmed_confirmed_overlap = normalized_candidate_ids & normalized_confirmed_ids
+    exact_evaluated_overlap = candidate_ids & evaluated_ids
+    trimmed_evaluated_overlap = normalized_candidate_ids & normalized_evaluated_ids
     return {
         "unique_candidate_keys": len(candidate_keys),
         "unique_candidate_match_ids": len(candidate_ids),
         "already_in_database_keys": len(existing_candidate_keys),
         "new_candidate_keys": len(candidate_keys - existing_keys),
-        "candidate_matches_with_evaluated_prediction": len(candidate_ids & evaluated_ids),
-        "candidate_matches_with_unambiguous_confirmed_score": len(
-            candidate_ids & unambiguous_confirmed_ids
-        ),
+        "candidate_matches_with_evaluated_prediction": len(exact_evaluated_overlap),
+        "candidate_matches_with_unambiguous_confirmed_score": len(exact_confirmed_overlap),
+        "trimmed_id_overlap_with_evaluated_prediction": len(trimmed_evaluated_overlap),
+        "trimmed_id_overlap_with_confirmed_score": len(trimmed_confirmed_overlap),
+        "candidate_ids_sample": sorted(candidate_ids)[:25],
+        "confirmed_betclic_ids_sample": sorted(unambiguous_confirmed_ids)[:25],
+        "evaluated_prediction_ids_sample": sorted(evaluated_ids)[:25],
+        "confirmed_links_total": len(unambiguous_confirmed_ids),
+        "evaluated_match_ids_total": len(evaluated_ids),
+        "diagnostic_note": "ID-only comparison; samples are for manual diagnosis, never auto-link."
     }
 
 
