@@ -1,9 +1,11 @@
+import csv
 import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from prediction_history import persist_predictions
 from prediction_feedback_learning import (
     CLASSES, apply_calibrator, fit_feedback_calibrator,
     load_completed_forecasts, valid_probs,
@@ -101,6 +103,61 @@ class PredictionFeedbackLearningTests(unittest.TestCase):
             with sqlite3.connect(path) as conn:
                 self.assertEqual(conn.execute(
                     "SELECT COUNT(*) FROM prediction_history").fetchone()[0], 5)
+
+
+    def test_archived_forecast_becomes_feedback_eligible_after_confirmed_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            db_path = root / "history.db"
+            csv_path = root / "predictions.csv"
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("""
+                    CREATE TABLE validated_match_links (
+                        betclic_match_id TEXT, home_score INTEGER,
+                        away_score INTEGER, validation_status TEXT
+                    )
+                """)
+            fields = [
+                "match_id", "match_name", "kickoff_utc", "prediction",
+                "prob_home", "prob_draw", "prob_away", "model_status",
+            ]
+            with csv_path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=fields)
+                writer.writeheader()
+                writer.writerow({
+                    "match_id": "betclic-42", "match_name": "Alpha - Beta",
+                    "kickoff_utc": "2026-11-27T18:00:00+00:00",
+                    "prediction": "HOME", "prob_home": "0.55",
+                    "prob_draw": "0.25", "prob_away": "0.20",
+                    "model_status": "EXPERIMENTAL_NOT_VALIDATED",
+                })
+
+            first = persist_predictions(
+                db_path, csv_path, "run-before-kickoff",
+                "2026-11-27T16:00:00+00:00",
+            )
+            self.assertEqual(first["inserted"], 1)
+            self.assertEqual(load_completed_forecasts(db_path), [])
+
+            # A confirmed Betclic-ID link arrives after the match has finished.
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("""
+                    INSERT INTO validated_match_links
+                    VALUES ('betclic-42', 2, 1, 'CONFIRMED')
+                """)
+
+            second = persist_predictions(
+                db_path, csv_path, "run-after-kickoff",
+                "2026-11-27T19:00:00+00:00",
+            )
+            self.assertEqual(second["inserted"], 1)
+            self.assertEqual(second["evaluated"], 2)
+
+            eligible = load_completed_forecasts(db_path)
+            self.assertEqual(len(eligible), 1)
+            self.assertEqual(eligible[0]["match_id"], "betclic-42")
+            self.assertEqual(eligible[0]["outcome"], "HOME")
+            self.assertEqual(eligible[0]["probs"], [0.55, 0.25, 0.20])
 
 if __name__ == "__main__":
     unittest.main()
