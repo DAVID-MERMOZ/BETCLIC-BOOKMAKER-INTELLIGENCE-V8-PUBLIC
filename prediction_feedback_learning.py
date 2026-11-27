@@ -1,7 +1,8 @@
 """Guarded feedback learning from completed archived pre-match forecasts.
 
-Only confirmed, unique match outcomes are used. Calibration is evaluated on a
-strict chronological holdout before it can be applied to future forecasts.
+A feedback audit/training attempt is triggered at each new multiple of ten
+confirmed unique matches. Between thresholds, no model is fitted or changed.
+Calibration still requires the minimum sample and chronological holdout gains.
 The private SQLite database is opened read-only.
 """
 import csv
@@ -15,6 +16,7 @@ from sklearn.linear_model import LogisticRegression
 
 CLASSES = ("HOME", "DRAW", "AWAY")
 MIN_HISTORY = 80
+FEEDBACK_AUDIT_INTERVAL = 10
 MIN_TRAIN = 50
 MIN_HOLDOUT = 20
 MIN_BRIER_GAIN = 0.002
@@ -155,8 +157,26 @@ def fit_feedback_calibrator(rows):
         "activation_reason": "Minimum 80 unique completed pre-match forecasts required.",
     }
     if len(rows) < MIN_HISTORY:
+        status["activation_reason"] = (
+            f"Waiting for {MIN_HISTORY} unique confirmed pre-match forecasts; "
+            f"currently {len(rows)}.")
+        status["next_audit_at"] = MIN_HISTORY
         return {"model": None, "status": status}
 
+    # The history evaluator still runs on every pipeline cycle. Expensive
+    # feedback fitting is gated to each ten-match milestone, avoiding noisy
+    # parameter changes after every newly completed fixture.
+    remainder = len(rows) % FEEDBACK_AUDIT_INTERVAL
+    if remainder:
+        next_audit = len(rows) + (FEEDBACK_AUDIT_INTERVAL - remainder)
+        status["status"] = "FEEDBACK_AUDIT_WAITING_FOR_NEXT_10"
+        status["activation_reason"] = (
+            f"No fitting between milestones; next audit at "
+            f"{next_audit} unique confirmed matches.")
+        status["next_audit_at"] = next_audit
+        return {"model": None, "status": status}
+
+    status["next_audit_at"] = len(rows) + FEEDBACK_AUDIT_INTERVAL
     train, holdout = _chronological_split(rows)
     status["train_n"], status["holdout_n"] = len(train), len(holdout)
     if len(train) < MIN_TRAIN or len(holdout) < MIN_HOLDOUT:
@@ -240,6 +260,7 @@ def load_and_fit(db_path=DB_PATH, status_path=STATUS_PATH):
     write_status(fitted["status"], status_path)
     print("APPRENTISSAGE PAR RETOUR D'EXPERIENCE :", fitted["status"])
     print("Predictions historiques uniques confirmees :", fitted["status"]["history_n"])
+    print("Prochain audit feedback :", fitted["status"].get("next_audit_at", ""))
     print("Statut :", fitted["status"]["status"])
     return fitted
 
