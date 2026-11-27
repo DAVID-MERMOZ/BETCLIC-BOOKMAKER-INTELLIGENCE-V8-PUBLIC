@@ -1,7 +1,8 @@
 """Guarded feedback learning from completed archived pre-match forecasts.
 
-Only confirmed, unique match outcomes are used. Calibration is evaluated on a
-strict chronological holdout before it can be applied to future forecasts.
+A feedback audit/training attempt is triggered at each new multiple of ten
+confirmed unique matches. Between thresholds, no model is fitted or changed.
+Calibration still requires the minimum sample and chronological holdout gains.
 The private SQLite database is opened read-only.
 """
 import csv
@@ -15,6 +16,7 @@ from sklearn.linear_model import LogisticRegression
 
 CLASSES = ("HOME", "DRAW", "AWAY")
 MIN_HISTORY = 80
+FEEDBACK_AUDIT_INTERVAL = 10
 MIN_TRAIN = 50
 MIN_HOLDOUT = 20
 MIN_BRIER_GAIN = 0.002
@@ -155,9 +157,22 @@ def fit_feedback_calibrator(rows):
         "activation_reason": "Minimum 80 unique completed pre-match forecasts required.",
     }
     if len(rows) < MIN_HISTORY:
+        status["activation_reason"] = (
+            f"Waiting for {MIN_HISTORY} unique confirmed pre-match forecasts; "
+            f"currently {len(rows)}.")
+        status["next_audit_at"] = MIN_HISTORY
         return {"model": None, "status": status}
 
-    train, holdout = _chronological_split(rows)
+    # Advance the training sample only at ten-match milestones. Between
+    # milestones, reuse the last complete milestone's data so a previously
+    # validated calibrator remains available without incorporating 1-9 new
+    # outcomes prematurely.
+    remainder = len(rows) % FEEDBACK_AUDIT_INTERVAL
+    audit_n = len(rows) - remainder
+    audit_rows = rows[:audit_n]
+    status["audit_sample_n"] = audit_n
+    status["next_audit_at"] = audit_n + FEEDBACK_AUDIT_INTERVAL
+    train, holdout = _chronological_split(audit_rows)
     status["train_n"], status["holdout_n"] = len(train), len(holdout)
     if len(train) < MIN_TRAIN or len(holdout) < MIN_HOLDOUT:
         status["status"] = "FEEDBACK_DISABLED_INSUFFICIENT_HOLDOUT"
@@ -192,8 +207,8 @@ def fit_feedback_calibrator(rows):
 
     final_model = LogisticRegression(C=0.1, solver="lbfgs", max_iter=2000,
                                      random_state=42)
-    final_model.fit([log_features(r["probs"]) for r in rows],
-                    [r["outcome"] for r in rows])
+    final_model.fit([log_features(r["probs"]) for r in audit_rows],
+                    [r["outcome"] for r in audit_rows])
     status["status"] = "FEEDBACK_ACTIVE_VALIDATED_ON_CHRONOLOGICAL_HOLDOUT"
     status["activation_reason"] = "Both holdout metrics improved above pre-set minimum gains."
     return {"model": final_model, "status": status}
@@ -240,6 +255,7 @@ def load_and_fit(db_path=DB_PATH, status_path=STATUS_PATH):
     write_status(fitted["status"], status_path)
     print("APPRENTISSAGE PAR RETOUR D'EXPERIENCE :", fitted["status"])
     print("Predictions historiques uniques confirmees :", fitted["status"]["history_n"])
+    print("Prochain audit feedback :", fitted["status"].get("next_audit_at", ""))
     print("Statut :", fitted["status"]["status"])
     return fitted
 

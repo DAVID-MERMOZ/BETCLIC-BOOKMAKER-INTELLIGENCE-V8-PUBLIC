@@ -49,6 +49,20 @@ class PredictionFeedbackLearningTests(unittest.TestCase):
         fitted = fit_feedback_calibrator(make_rows(30))
         self.assertEqual(apply_calibrator(raw, fitted), raw)
 
+    def test_feedback_reuses_last_milestone_between_ten_match_audits(self):
+        fitted = fit_feedback_calibrator(make_rows(85))
+        self.assertEqual(fitted["status"]["history_n"], 85)
+        self.assertEqual(fitted["status"]["audit_sample_n"], 80)
+        self.assertEqual(fitted["status"]["next_audit_at"], 90)
+        self.assertIsNotNone(fitted["model"])
+
+    def test_feedback_advances_training_sample_on_ten_match_milestone(self):
+        fitted = fit_feedback_calibrator(make_rows(90))
+        self.assertEqual(fitted["status"]["history_n"], 90)
+        self.assertEqual(fitted["status"]["audit_sample_n"], 90)
+        self.assertEqual(fitted["status"]["next_audit_at"], 100)
+        self.assertIsNotNone(fitted["model"])
+
     def test_active_calibrator_preserves_probability_mapping(self):
         raw = {"HOME": 0.8, "DRAW": 0.1, "AWAY": 0.1}
         fitted = fit_feedback_calibrator(make_rows())
