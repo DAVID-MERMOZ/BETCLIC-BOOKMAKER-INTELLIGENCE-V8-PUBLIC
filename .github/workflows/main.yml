@@ -193,23 +193,3 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Publier la sauvegarde SQLite durable
-        env:
-          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
-        run: |
-          set -euo pipefail
-          test -s data/betclic_history.db
-          mkdir -p /tmp/betclic-backup
-          gzip -1 -c data/betclic_history.db > /tmp/betclic-backup/betclic_history.db.gz
-          if ! gh release view betclic-db-latest --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 >/dev/null 2>&1; then
-            gh release create betclic-db-latest \
-              --title "Betclic database - latest durable snapshot" \
-              --notes "Sauvegarde SQLite automatisee. Asset remplace a chaque collecte reussie." \
-              --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8
-          fi
-          gh release upload betclic-db-latest \
-            /tmp/betclic-backup/betclic_history.db.gz \
-            --clobber \
-            --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8
-          echo "SAUVEGARDE DURABLE PUBLIEE"
-          ls -lh /tmp/betclic-backup/betclic_history.db.gz
