@@ -1,15 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2
-      ],
-      "signature": "030534a7ad59b1b9ac7dca7f9b848c52f7137d655d46e41f3f23dd3e39333a3c",
-      "total_parts": 3
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -198,22 +188,22 @@
           "kickoff_utc": "2026-11-27T17:30:00+00:00",
           "lambda_away": 1.56,
           "lambda_home": 1.7,
-          "market_prob_away": 0.222,
-          "market_prob_draw": 0.298,
-          "market_prob_home": 0.48,
+          "market_prob_away": 0.181,
+          "market_prob_draw": 0.277,
+          "market_prob_home": 0.543,
           "market_status": "AVAILABLE",
           "match_key": "1289855474606080",
           "match_name": "Stellenbosch FC - TS Galaxy",
-          "max_abs_edge_pp": 19.1,
+          "max_abs_edge_pp": 25.4,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.837,
           "over_2_5": 0.633,
           "over_3_5": 0.411,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.238,
-          "prob_draw": 0.311,
-          "prob_home": 0.451,
+          "prob_away": 0.202,
+          "prob_draw": 0.293,
+          "prob_home": 0.505,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -304,8 +294,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-27T17:18:49.277052+00:00",
-      "signature": "cd967280b25dde59a12ae8303ec76d34813be8404f445c086c75ba930db9afae"
+      "sent_at_utc": "2026-11-27T17:27:08.268324+00:00",
+      "signature": "030534a7ad59b1b9ac7dca7f9b848c52f7137d655d46e41f3f23dd3e39333a3c"
     }
   },
   "version": 1
