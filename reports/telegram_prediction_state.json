@@ -1,16 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3
-      ],
-      "signature": "dcf646535584414160a92e0ff8f66b0f416bbed15ad94d76898928e362a2669e",
-      "total_parts": 4
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -25,22 +14,22 @@
           "kickoff_utc": "2026-11-27T20:00:00+00:00",
           "lambda_away": 1.34,
           "lambda_home": 1.5,
-          "market_prob_away": 0.344,
-          "market_prob_draw": 0.279,
-          "market_prob_home": 0.376,
+          "market_prob_away": 0.327,
+          "market_prob_draw": 0.28,
+          "market_prob_home": 0.392,
           "market_status": "AVAILABLE",
           "match_key": "1274386183106560",
           "match_name": "Nottingham Forest - Chelsea",
-          "max_abs_edge_pp": 21.4,
+          "max_abs_edge_pp": 21.3,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.776,
           "over_2_5": 0.541,
           "over_3_5": 0.318,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.331,
+          "prob_away": 0.317,
           "prob_draw": 0.312,
-          "prob_home": 0.357,
+          "prob_home": 0.371,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -54,22 +43,22 @@
           "kickoff_utc": "2026-11-27T19:45:00+00:00",
           "lambda_away": 1.34,
           "lambda_home": 1.59,
-          "market_prob_away": 0.429,
-          "market_prob_draw": 0.286,
-          "market_prob_home": 0.286,
+          "market_prob_away": 0.443,
+          "market_prob_draw": 0.277,
+          "market_prob_home": 0.28,
           "market_status": "AVAILABLE",
           "match_key": "1275279339159552",
           "match_name": "Brest - Paris FC",
-          "max_abs_edge_pp": 11.1,
+          "max_abs_edge_pp": 12.6,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.79,
           "over_2_5": 0.561,
           "over_3_5": 0.337,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
-          "prob_away": 0.412,
-          "prob_draw": 0.29,
-          "prob_home": 0.298,
+          "prob_away": 0.424,
+          "prob_draw": 0.283,
+          "prob_home": 0.293,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -83,22 +72,22 @@
           "kickoff_utc": "2026-11-27T12:15:00+00:00",
           "lambda_away": 1.29,
           "lambda_home": 1.82,
-          "market_prob_away": 0.321,
-          "market_prob_draw": 0.257,
-          "market_prob_home": 0.422,
+          "market_prob_away": 0.344,
+          "market_prob_draw": 0.26,
+          "market_prob_home": 0.396,
           "market_status": "AVAILABLE",
           "match_key": "1280221635424256",
           "match_name": "Al Kholood - Al-Khaleej",
-          "max_abs_edge_pp": 21.3,
+          "max_abs_edge_pp": 18.6,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.817,
           "over_2_5": 0.602,
           "over_3_5": 0.378,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.325,
-          "prob_draw": 0.285,
-          "prob_home": 0.39,
+          "prob_away": 0.345,
+          "prob_draw": 0.287,
+          "prob_home": 0.368,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -392,8 +381,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-27T08:00:51.123025+00:00",
-      "signature": "614cc1fc8f75bd19b39b2c763b653d00188a53c66e410432c36d1cb05f3a4e1a"
+      "sent_at_utc": "2026-11-27T09:48:27.354802+00:00",
+      "signature": "dcf646535584414160a92e0ff8f66b0f416bbed15ad94d76898928e362a2669e"
     }
   },
   "version": 1
