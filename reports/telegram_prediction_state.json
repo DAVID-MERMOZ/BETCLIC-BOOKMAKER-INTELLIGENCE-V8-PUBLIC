@@ -3,7 +3,8 @@
     "todays_sample_predictions.csv": {
       "sent_parts": [
         0,
-        1
+        1,
+        2
       ],
       "signature": "11674e7b42816ea7374c1dd8166ce42bfd89a403a49831dfa82f1a22ebfe90b4",
       "total_parts": 4
