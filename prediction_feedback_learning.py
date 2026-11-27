@@ -163,21 +163,16 @@ def fit_feedback_calibrator(rows):
         status["next_audit_at"] = MIN_HISTORY
         return {"model": None, "status": status}
 
-    # The history evaluator still runs on every pipeline cycle. Expensive
-    # feedback fitting is gated to each ten-match milestone, avoiding noisy
-    # parameter changes after every newly completed fixture.
+    # Advance the training sample only at ten-match milestones. Between
+    # milestones, reuse the last complete milestone's data so a previously
+    # validated calibrator remains available without incorporating 1-9 new
+    # outcomes prematurely.
     remainder = len(rows) % FEEDBACK_AUDIT_INTERVAL
-    if remainder:
-        next_audit = len(rows) + (FEEDBACK_AUDIT_INTERVAL - remainder)
-        status["status"] = "FEEDBACK_AUDIT_WAITING_FOR_NEXT_10"
-        status["activation_reason"] = (
-            f"No fitting between milestones; next audit at "
-            f"{next_audit} unique confirmed matches.")
-        status["next_audit_at"] = next_audit
-        return {"model": None, "status": status}
-
-    status["next_audit_at"] = len(rows) + FEEDBACK_AUDIT_INTERVAL
-    train, holdout = _chronological_split(rows)
+    audit_n = len(rows) - remainder
+    audit_rows = rows[:audit_n]
+    status["audit_sample_n"] = audit_n
+    status["next_audit_at"] = audit_n + FEEDBACK_AUDIT_INTERVAL
+    train, holdout = _chronological_split(audit_rows)
     status["train_n"], status["holdout_n"] = len(train), len(holdout)
     if len(train) < MIN_TRAIN or len(holdout) < MIN_HOLDOUT:
         status["status"] = "FEEDBACK_DISABLED_INSUFFICIENT_HOLDOUT"
@@ -212,8 +207,8 @@ def fit_feedback_calibrator(rows):
 
     final_model = LogisticRegression(C=0.1, solver="lbfgs", max_iter=2000,
                                      random_state=42)
-    final_model.fit([log_features(r["probs"]) for r in rows],
-                    [r["outcome"] for r in rows])
+    final_model.fit([log_features(r["probs"]) for r in audit_rows],
+                    [r["outcome"] for r in audit_rows])
     status["status"] = "FEEDBACK_ACTIVE_VALIDATED_ON_CHRONOLOGICAL_HOLDOUT"
     status["activation_reason"] = "Both holdout metrics improved above pre-set minimum gains."
     return {"model": final_model, "status": status}
