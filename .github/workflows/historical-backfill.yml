@@ -44,7 +44,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p /tmp/betclic-db
+          mkdir -p /tmp/betclic-db data
           gh release download betclic-db-latest \
             --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 \
             --pattern "betclic_history.db.gz" --dir /tmp/betclic-db
