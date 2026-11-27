@@ -1,0 +1,86 @@
+name: BETCLIC V8.1 - Historical prediction backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_import:
+        description: "Import validated historical predictions into the private database"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: betclic-historical-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify private database access
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN" || { echo "PRIVATE_REPO_TOKEN missing"; exit 1; }
+          gh release view betclic-db-latest --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8
+
+      - name: Restore private database snapshot
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/betclic-db data
+          gh release download betclic-db-latest \
+            --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8 \
+            --pattern "betclic_history.db.gz" --dir /tmp/betclic-db
+          gzip -dc /tmp/betclic-db/betclic_history.db.gz > data/betclic_history.db
+          test -s data/betclic_history.db
+          python - <<'PY'
+          import sqlite3
+          db = sqlite3.connect("file:data/betclic_history.db?mode=ro", uri=True)
+          names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+          assert "prediction_history" in names, "prediction_history table missing from restored DB"
+          print("PRIVATE_DB_RESTORED_AND_SCHEMA_VERIFIED")
+          db.close()
+          PY
+
+      - name: Dry-run historical artifact recovery
+        if: ${{ inputs.confirm_import != true }}
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: python backfill_prediction_history.py
+
+      - name: Import validated pre-match history
+        if: ${{ inputs.confirm_import == true }}
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          BETCLIC_BACKFILL_APPROVED: "YES"
+        run: python backfill_prediction_history.py --apply
+
+      - name: Publish updated private database snapshot
+        if: ${{ inputs.confirm_import == true && success() }}
+        env:
+          GH_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/betclic-backup
+          gzip -1 -c data/betclic_history.db > /tmp/betclic-backup/betclic_history.db.gz
+          gh release upload betclic-db-latest \
+            /tmp/betclic-backup/betclic_history.db.gz \
+            --clobber --repo DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8
+          echo "PRIVATE_DATABASE_BACKUP_UPDATED"
