@@ -6,6 +6,7 @@ import argparse
 import csv
 import math
 import os
+import sqlite3
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -83,7 +84,7 @@ def artifact_names(run_id):
     return artifacts
 
 
-def process_artifact(run_id, generated_at, artifact, temp_root, apply):
+def process_artifact(run_id, generated_at, artifact, temp_root, apply, seen_keys):
     target = temp_root / f"run-{run_id}-{len(list(temp_root.iterdir()))}"
     target.mkdir(parents=True, exist_ok=True)
     subprocess.run(["gh", "run", "download", run_id, "--repo", PUBLIC_REPO,
@@ -100,7 +101,15 @@ def process_artifact(run_id, generated_at, artifact, temp_root, apply):
             reader = csv.DictReader(handle)
             if not reader.fieldnames or not set(REQUIRED).issubset(reader.fieldnames):
                 continue
-            rows = [row for row in reader if admissible_row(row, generated_at)]
+            rows = []
+            for row in reader:
+                if not admissible_row(row, generated_at):
+                    continue
+                key = (str(run_id), str(row["match_id"]))
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                rows.append(row)
             valid_count += len(rows)
             if apply and rows:
                 staged = target / f"validated-{csv_path.name}"
@@ -116,6 +125,49 @@ def process_artifact(run_id, generated_at, artifact, temp_root, apply):
             "rows": valid_count, "inserted": inserted}
 
 
+def audit_existing_database(candidate_keys):
+    """Compare unique candidates with the restored DB without modifying it."""
+    uri = f"file:{DB_PATH.resolve().as_posix()}?mode=ro"
+    with sqlite3.connect(uri, uri=True) as conn:
+        existing_keys = {
+            (str(run_id), str(match_id))
+            for run_id, match_id in conn.execute(
+                "SELECT workflow_run_id, match_id FROM prediction_history"
+            )
+        }
+        evaluated_ids = {
+            str(row[0]) for row in conn.execute(
+                "SELECT DISTINCT match_id FROM prediction_history "
+                "WHERE actual_outcome IS NOT NULL"
+            )
+        }
+        confirmed_rows = conn.execute("""
+            SELECT betclic_match_id,
+                   COUNT(DISTINCT CAST(home_score AS TEXT) || ':' ||
+                                  CAST(away_score AS TEXT))
+            FROM validated_match_links
+            WHERE validation_status='CONFIRMED'
+              AND home_score IS NOT NULL AND away_score IS NOT NULL
+            GROUP BY betclic_match_id
+        """).fetchall()
+        unambiguous_confirmed_ids = {
+            str(match_id) for match_id, variants in confirmed_rows if variants == 1
+        }
+
+    candidate_ids = {match_id for _, match_id in candidate_keys}
+    existing_candidate_keys = candidate_keys & existing_keys
+    return {
+        "unique_candidate_keys": len(candidate_keys),
+        "unique_candidate_match_ids": len(candidate_ids),
+        "already_in_database_keys": len(existing_candidate_keys),
+        "new_candidate_keys": len(candidate_keys - existing_keys),
+        "candidate_matches_with_evaluated_prediction": len(candidate_ids & evaluated_ids),
+        "candidate_matches_with_unambiguous_confirmed_score": len(
+            candidate_ids & unambiguous_confirmed_ids
+        ),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true",
@@ -126,6 +178,7 @@ def main():
     runs = list_runs()
     scanned = artifacts_seen = rows = inserted = 0
     details = []
+    seen_keys = set()
     with tempfile.TemporaryDirectory(prefix="betclic-backfill-") as tmp:
         root = Path(tmp)
         for run_id, created_at in runs:
@@ -134,13 +187,15 @@ def main():
                 artifacts_seen += 1
                 try:
                     result = process_artifact(
-                        run_id, artifact_created_at, name, root, args.apply)
+                        run_id, artifact_created_at, name, root, args.apply, seen_keys)
                     rows += result["rows"]
                     inserted += result["inserted"]
                     if result["csv"] and result["rows"]:
                         details.append(result)
                 except subprocess.CalledProcessError as exc:
                     print(f"ARTIFACT_SKIP run={run_id} name={name} reason=download_or_api_error")
+    audit = audit_existing_database(seen_keys)
+    print("BACKFILL_DATABASE_AUDIT", audit)
     print("BACKFILL_SUMMARY", {
         "mode": "APPLY" if args.apply else "DRY_RUN",
         "successful_main_runs": scanned,
