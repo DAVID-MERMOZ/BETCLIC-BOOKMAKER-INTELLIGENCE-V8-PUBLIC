@@ -21,7 +21,6 @@ on:
       - "targeted_market_refresh.py"
       - "reports/telegram_prediction_state.json"
       - "prediction_history_evaluation.py"
-      - ".github/workflows/unit-tests-pr.yml"
 
   workflow_dispatch:
 
