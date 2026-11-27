@@ -25,6 +25,87 @@ def table_exists(conn, database, table):
     return result is not None
 
 
+
+def merge_prediction_history(conn):
+    """Fusionne l'archive des predictions sans perdre les evaluations existantes."""
+    if not table_exists(conn, "remote", "prediction_history"):
+        print("prediction_history : absente de la sauvegarde distante (aucune fusion).")
+        return
+
+    remote_sql = conn.execute(
+        "SELECT sql FROM remote.sqlite_master "
+        "WHERE type='table' AND name='prediction_history'"
+    ).fetchone()[0]
+    if not table_exists(conn, "main", "prediction_history"):
+        # Reutilise le schema source, y compris sa cle unique (run, match).
+        create_sql = remote_sql.replace(
+            "CREATE TABLE prediction_history",
+            "CREATE TABLE main.prediction_history",
+            1,
+        )
+        conn.execute(create_sql)
+    else:
+        # Migration additive si la sauvegarde contient des colonnes plus recentes.
+        local_info = conn.execute("PRAGMA main.table_info(prediction_history)").fetchall()
+        local_columns = {row[1] for row in local_info}
+        remote_info = conn.execute("PRAGMA remote.table_info(prediction_history)").fetchall()
+        for row in remote_info:
+            name, column_type = row[1], row[2] or "TEXT"
+            if name not in local_columns:
+                safe_name = '"' + name.replace('"', '""') + '"'
+                conn.execute(
+                    f"ALTER TABLE main.prediction_history ADD COLUMN {safe_name} {column_type}"
+                )
+                local_columns.add(name)
+
+    local_columns = {
+        row[1] for row in conn.execute("PRAGMA main.table_info(prediction_history)")
+    }
+    remote_columns = {
+        row[1] for row in conn.execute("PRAGMA remote.table_info(prediction_history)")
+    }
+    shared = sorted(local_columns & remote_columns)
+    if not {"workflow_run_id", "match_id"}.issubset(shared):
+        raise RuntimeError("Schema prediction_history invalide : cles run/match absentes.")
+
+    columns_sql = ", ".join('"' + name.replace('"', '""') + '"' for name in shared)
+    conn.execute(
+        f"INSERT OR IGNORE INTO main.prediction_history ({columns_sql}) "
+        f"SELECT {columns_sql} FROM remote.prediction_history"
+    )
+
+    # Si une copie locale est encore pending mais que la sauvegarde distante
+    # contient son resultat confirme, completer uniquement les champs de resultat.
+    result_fields = [
+        name for name in (
+            "actual_outcome", "actual_home_score", "actual_away_score",
+            "actual_over_1_5", "actual_over_2_5", "actual_over_3_5",
+            "actual_btts_yes", "evaluated_at_utc",
+        )
+        if name in local_columns and name in remote_columns
+    ]
+    if "actual_outcome" in result_fields:
+        assignments = ", ".join(
+            '"' + name + '" = (SELECT r."' + name + '" '
+            'FROM remote.prediction_history r '
+            'WHERE r.workflow_run_id = main.prediction_history.workflow_run_id '
+            'AND r.match_id = main.prediction_history.match_id)'
+            for name in result_fields
+        )
+        conn.execute(
+            "UPDATE main.prediction_history SET " + assignments + " "
+            "WHERE actual_outcome IS NULL AND EXISTS ("
+            "SELECT 1 FROM remote.prediction_history r "
+            "WHERE r.workflow_run_id = main.prediction_history.workflow_run_id "
+            "AND r.match_id = main.prediction_history.match_id "
+            "AND r.actual_outcome IS NOT NULL)"
+        )
+
+    count = conn.execute(
+        "SELECT COUNT(*) FROM main.prediction_history"
+    ).fetchone()[0]
+    print("prediction_history :", count)
+
 def merge_databases(remote_path):
     remote_path = Path(remote_path)
 
@@ -38,6 +119,8 @@ def merge_databases(remote_path):
 
     try:
         conn.execute("ATTACH DATABASE ? AS remote", (str(remote_path),))
+
+        merge_prediction_history(conn)
 
         if table_exists(conn, "remote", "matches"):
             # Support both legacy (5-column) and current (6-column) schemas.
@@ -180,7 +263,7 @@ def merge_databases(remote_path):
         conn.commit()
         print("FUSION SQLITE : SUCCES")
 
-        for table in ("matches", "odds_history", "odds_alerts", "provider_results", "provider_collection_days"):
+        for table in ("matches", "odds_history", "odds_alerts", "provider_results", "provider_collection_days", "prediction_history"):
             if table_exists(conn, "main", table):
                 count = conn.execute(
                     f"SELECT COUNT(*) FROM main.{table}"
