@@ -20,6 +20,7 @@ on:
       - "lightweight_change_collector.py"
       - "targeted_market_refresh.py"
       - "reports/telegram_prediction_state.json"
+      - "prediction_history_evaluation.py"
 
   workflow_dispatch:
 
@@ -146,6 +147,9 @@ jobs:
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: python prediction_history.py
+
+      - name: Evaluer les predictions historiques pre-match (lecture seule)
+        run: python prediction_history_evaluation.py
 
       - name: Notifier les predictions sur Telegram
         if: success()
