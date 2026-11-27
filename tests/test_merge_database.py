@@ -46,6 +46,108 @@ class MergeDatabaseCheckpointTests(unittest.TestCase):
             self.assertEqual(row, ("sportscore", "2026-01-01", "COMPLETE", 4, 4))
 
 
+
+    def test_confirmed_match_links_are_preserved_and_conflicts_fail(self):
+        with tempfile.TemporaryDirectory() as directory:
+            local = Path(directory) / "local.db"
+            remote = Path(directory) / "remote.db"
+            sqlite3.connect(local).close()
+            schema = """
+                CREATE TABLE validated_match_links (
+                    candidate_id TEXT PRIMARY KEY,
+                    betclic_match_id TEXT NOT NULL,
+                    betclic_match TEXT,
+                    betclic_date TEXT,
+                    provider TEXT NOT NULL,
+                    provider_match_id TEXT NOT NULL,
+                    provider_competition TEXT,
+                    provider_match TEXT,
+                    provider_date TEXT,
+                    home_score INTEGER NOT NULL,
+                    away_score INTEGER NOT NULL,
+                    validation_status TEXT NOT NULL CHECK (validation_status = 'CONFIRMED'),
+                    validated_by TEXT,
+                    validated_at TEXT,
+                    validation_notes TEXT,
+                    linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (provider, provider_match_id)
+                )
+            """
+            values = (
+                "candidate-1", "betclic-123", "Home - Away", "2026-11-20",
+                "sportscore", "provider-456", "League", "Home - Away",
+                "2026-11-20T18:00:00Z", 2, 1, "CONFIRMED",
+                "manual_review", "2026-11-21T00:00:00Z", "Two sources checked",
+                "2026-11-21T00:00:00Z",
+            )
+            with sqlite3.connect(remote) as conn:
+                conn.execute(schema)
+                conn.execute(
+                    "INSERT INTO validated_match_links VALUES ("
+                    + ",".join("?" for _ in values) + ")", values
+                )
+            with patch.object(merge_database, "LOCAL_DB", local):
+                merge_database.merge_databases(remote)
+                merge_database.merge_databases(remote)
+            with sqlite3.connect(local) as conn:
+                rows = conn.execute(
+                    "SELECT candidate_id, betclic_match_id, provider, "
+                    "provider_match_id, home_score, away_score, validation_status "
+                    "FROM validated_match_links"
+                ).fetchall()
+            self.assertEqual(rows, [
+                ("candidate-1", "betclic-123", "sportscore", "provider-456",
+                 2, 1, "CONFIRMED")
+            ])
+
+    def test_conflicting_confirmed_match_link_is_not_silently_overwritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            local = Path(directory) / "local.db"
+            remote = Path(directory) / "remote.db"
+            schema = """
+                CREATE TABLE validated_match_links (
+                    candidate_id TEXT PRIMARY KEY,
+                    betclic_match_id TEXT NOT NULL,
+                    betclic_match TEXT,
+                    betclic_date TEXT,
+                    provider TEXT NOT NULL,
+                    provider_match_id TEXT NOT NULL,
+                    provider_competition TEXT,
+                    provider_match TEXT,
+                    provider_date TEXT,
+                    home_score INTEGER NOT NULL,
+                    away_score INTEGER NOT NULL,
+                    validation_status TEXT NOT NULL CHECK (validation_status = 'CONFIRMED'),
+                    validated_by TEXT,
+                    validated_at TEXT,
+                    validation_notes TEXT,
+                    linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (provider, provider_match_id)
+                )
+            """
+            sqlite3.connect(local).close()
+            with sqlite3.connect(remote) as conn:
+                conn.execute(schema)
+                conn.execute(
+                    "INSERT INTO validated_match_links "
+                    "(candidate_id, betclic_match_id, provider, provider_match_id, "
+                    "home_score, away_score, validation_status) "
+                    "VALUES ('candidate-1', 'betclic-123', 'sportscore', "
+                    "'provider-456', 2, 1, 'CONFIRMED')"
+                )
+            with sqlite3.connect(local) as conn:
+                conn.execute(schema)
+                conn.execute(
+                    "INSERT INTO validated_match_links "
+                    "(candidate_id, betclic_match_id, provider, provider_match_id, "
+                    "home_score, away_score, validation_status) "
+                    "VALUES ('candidate-1', 'betclic-123', 'sportscore', "
+                    "'provider-456', 3, 1, 'CONFIRMED')"
+                )
+            with patch.object(merge_database, "LOCAL_DB", local):
+                with self.assertRaisesRegex(RuntimeError, "contradictoire"):
+                    merge_database.merge_databases(remote)
+
     def test_prediction_history_is_merged_without_duplicates_and_keeps_confirmed_result(self):
         with tempfile.TemporaryDirectory() as directory:
             local = Path(directory) / "local.db"

@@ -106,6 +106,95 @@ def merge_prediction_history(conn):
     ).fetchone()[0]
     print("prediction_history :", count)
 
+
+def merge_validated_match_links(conn):
+    """Preserve les liaisons de resultats humainement confirmees."""
+    if not table_exists(conn, "remote", "validated_match_links"):
+        print("validated_match_links : absente de la sauvegarde distante (aucune fusion).")
+        return
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS main.validated_match_links (
+            candidate_id TEXT PRIMARY KEY,
+            betclic_match_id TEXT NOT NULL,
+            betclic_match TEXT,
+            betclic_date TEXT,
+            provider TEXT NOT NULL,
+            provider_match_id TEXT NOT NULL,
+            provider_competition TEXT,
+            provider_match TEXT,
+            provider_date TEXT,
+            home_score INTEGER NOT NULL,
+            away_score INTEGER NOT NULL,
+            validation_status TEXT NOT NULL CHECK (validation_status = 'CONFIRMED'),
+            validated_by TEXT,
+            validated_at TEXT,
+            validation_notes TEXT,
+            linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (provider, provider_match_id)
+        )
+    """)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS main.idx_validated_links_betclic
+        ON validated_match_links (betclic_match_id)
+    """)
+
+    columns = [
+        "candidate_id", "betclic_match_id", "betclic_match", "betclic_date",
+        "provider", "provider_match_id", "provider_competition",
+        "provider_match", "provider_date", "home_score", "away_score",
+        "validation_status", "validated_by", "validated_at",
+        "validation_notes", "linked_at",
+    ]
+    remote_columns = {
+        row[1] for row in conn.execute("PRAGMA remote.table_info(validated_match_links)")
+    }
+    if not set(columns).issubset(remote_columns):
+        raise RuntimeError("Schema distant validated_match_links incomplet.")
+    selected = ", ".join('"' + name + '"' for name in columns)
+    rows = conn.execute(
+        f"SELECT {selected} FROM remote.validated_match_links"
+    ).fetchall()
+
+    identity_columns = columns[:-1]
+    for row in rows:
+        record = dict(zip(columns, row))
+        by_candidate = conn.execute(
+            "SELECT " + selected + " FROM main.validated_match_links WHERE candidate_id=?",
+            (record["candidate_id"],)
+        ).fetchone()
+        if by_candidate is not None and tuple(by_candidate) != tuple(row):
+            raise RuntimeError(
+                "Lien valide contradictoire pour candidate_id "
+                + str(record["candidate_id"])
+            )
+        by_provider = conn.execute(
+            "SELECT candidate_id, betclic_match_id, home_score, away_score "
+            "FROM main.validated_match_links WHERE provider=? AND provider_match_id=?",
+            (record["provider"], record["provider_match_id"])
+        ).fetchone()
+        expected_provider = (
+            record["candidate_id"], record["betclic_match_id"],
+            record["home_score"], record["away_score"]
+        )
+        if by_provider is not None and tuple(by_provider) != expected_provider:
+            raise RuntimeError(
+                "Lien fournisseur contradictoire pour "
+                + str(record["provider"]) + ":" + str(record["provider_match_id"])
+            )
+        placeholders = ", ".join("?" for _ in columns)
+        conn.execute(
+            f"INSERT OR IGNORE INTO main.validated_match_links ({selected}) "
+            f"VALUES ({placeholders})",
+            tuple(row)
+        )
+
+    count = conn.execute(
+        "SELECT COUNT(*) FROM main.validated_match_links"
+    ).fetchone()[0]
+    print("validated_match_links :", count)
+
+
 def merge_databases(remote_path):
     remote_path = Path(remote_path)
 
@@ -121,6 +210,7 @@ def merge_databases(remote_path):
         conn.execute("ATTACH DATABASE ? AS remote", (str(remote_path),))
 
         merge_prediction_history(conn)
+        merge_validated_match_links(conn)
 
         if table_exists(conn, "remote", "matches"):
             # Support both legacy (5-column) and current (6-column) schemas.
@@ -263,7 +353,7 @@ def merge_databases(remote_path):
         conn.commit()
         print("FUSION SQLITE : SUCCES")
 
-        for table in ("matches", "odds_history", "odds_alerts", "provider_results", "provider_collection_days", "prediction_history"):
+        for table in ("matches", "odds_history", "odds_alerts", "provider_results", "provider_collection_days", "prediction_history", "validated_match_links"):
             if table_exists(conn, "main", table):
                 count = conn.execute(
                     f"SELECT COUNT(*) FROM main.{table}"
