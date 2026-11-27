@@ -70,10 +70,17 @@ def list_runs():
 
 
 def artifact_names(run_id):
+    # Artifact upload time is a conservative upper bound for when its CSV existed.
+    # Run creation can precede prediction generation and admit post-kickoff rows.
     output = gh("api", "--jq",
-                '.artifacts[] | select(.expired == false) | .name',
+                '.artifacts[] | select(.expired == false) | [.name, .created_at] | @tsv',
                 f"repos/{PUBLIC_REPO}/actions/runs/{run_id}/artifacts")
-    return [name.strip() for name in output.splitlines() if name.strip()]
+    artifacts = []
+    for line in output.splitlines():
+        parts = line.split("\\t")
+        if len(parts) == 2 and parts[0].strip() and parts[1].strip():
+            artifacts.append((parts[0].strip(), parts[1].strip()))
+    return artifacts
 
 
 def process_artifact(run_id, generated_at, artifact, temp_root, apply):
@@ -123,10 +130,11 @@ def main():
         root = Path(tmp)
         for run_id, created_at in runs:
             scanned += 1
-            for name in artifact_names(run_id):
+            for name, artifact_created_at in artifact_names(run_id):
                 artifacts_seen += 1
                 try:
-                    result = process_artifact(run_id, created_at, name, root, args.apply)
+                    result = process_artifact(
+                        run_id, artifact_created_at, name, root, args.apply)
                     rows += result["rows"]
                     inserted += result["inserted"]
                     if result["csv"] and result["rows"]:
