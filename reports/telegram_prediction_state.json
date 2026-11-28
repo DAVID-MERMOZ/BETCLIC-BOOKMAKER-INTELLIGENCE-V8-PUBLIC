@@ -1,24 +1,10 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "signature": "3ca920b6082682b31e06af478a37de33098114ba890b0f985cc16405900f5c65",
-      "total_parts": 7
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
-      "match_count": 29,
-      "sent_at_utc": "2026-11-28T09:57:36.160724+00:00",
-      "signature": "0545406be7302bf22249f03b61adaf81c5db8d61434d7e6d3634195145010c63"
+      "match_count": 26,
+      "sent_at_utc": "2026-11-28T10:25:39.510957+00:00",
+      "signature": "3ca920b6082682b31e06af478a37de33098114ba890b0f985cc16405900f5c65"
     }
   },
   "version": 2
