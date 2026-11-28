@@ -137,12 +137,10 @@ def main() -> int:
     if not args.db.is_file():
         parser.error(f"Base absente : {args.db}")
     changes = collect_changes(args.db)
-    match_ids = sorted({row["match_id"] for row in changes})
+    match_count = len({row["match_id"] for row in changes})
     print(f"CHANGEMENTS DE COTES : {len(changes)}")
-    print(f"MATCHS A REEVALUER : {len(match_ids)}")
-    for match_id in match_ids:
-        sample = next(row for row in changes if row["match_id"] == match_id)
-        print(f"- {sample['match_name']} | id={match_id}")
+    print(f"MATCHS A REEVALUER : {match_count}")
+    print("Détails des matchs masqués dans les journaux publics.")
     if args.dry_run:
         print("DRY-RUN : aucun fichier ecrit.")
     else:
