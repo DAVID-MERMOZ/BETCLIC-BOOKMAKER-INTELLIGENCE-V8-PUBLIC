@@ -1,11 +1,17 @@
 {
-  "version": 2,
-  "sources": {
+  "pending": {
     "todays_sample_predictions.csv": {
-      "signature": "e50126ac8d2db56b4f1fe512e75270c06addb1533fa5c0b7da3e99076a9548ea",
-      "match_count": 29,
-      "sent_at_utc": "2026-11-28T09:27:34.061819+00:00"
+      "sent_parts": [],
+      "signature": "0545406be7302bf22249f03b61adaf81c5db8d61434d7e6d3634195145010c63",
+      "total_parts": 8
     }
   },
-  "pending": {}
+  "sources": {
+    "todays_sample_predictions.csv": {
+      "match_count": 29,
+      "sent_at_utc": "2026-11-28T09:27:34.061819+00:00",
+      "signature": "e50126ac8d2db56b4f1fe512e75270c06addb1533fa5c0b7da3e99076a9548ea"
+    }
+  },
+  "version": 2
 }
