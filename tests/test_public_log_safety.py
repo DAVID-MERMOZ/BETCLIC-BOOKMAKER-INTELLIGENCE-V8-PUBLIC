@@ -13,7 +13,7 @@ class PublicDataSafetyTests(unittest.TestCase):
     def test_main_workflow_uploads_only_aggregate_reports(self):
         workflow = (ROOT / ".github" / "workflows" / "main.yml").read_text(encoding="utf-8")
         artifact = workflow.split(
-            "name: betclic-model-and-reports-\${{ github.run_id }}", 1
+            "name: betclic-model-and-reports-", 1
         )[1].split("if-no-files-found", 1)[0]
         self.assertIn("reports/prediction_feedback_status.csv", artifact)
         self.assertIn("reports/prediction_history_evaluation.csv", artifact)
