@@ -14,6 +14,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from prediction_history import persist_predictions
+from match_results_report import (
+    split_teams, similarity, squad_compatible, parse_date,
+    MAX_DATE_DELTA_HOURS,
+)
 
 PUBLIC_REPO = "DAVID-MERMOZ/BETCLIC-BOOKMAKER-INTELLIGENCE-V8-PUBLIC"
 MAIN_WORKFLOW = ".github/workflows/main.yml"
@@ -85,7 +89,7 @@ def artifact_names(run_id):
     return artifacts
 
 
-def process_artifact(run_id, generated_at, artifact, temp_root, apply, seen_keys):
+def process_artifact(run_id, generated_at, artifact, temp_root, apply, seen_keys, fixtures=None):
     target = temp_root / f"run-{run_id}-{len(list(temp_root.iterdir()))}"
     target.mkdir(parents=True, exist_ok=True)
     subprocess.run(["gh", "run", "download", run_id, "--repo", PUBLIC_REPO,
@@ -106,6 +110,9 @@ def process_artifact(run_id, generated_at, artifact, temp_root, apply, seen_keys
             for row in reader:
                 if not admissible_row(row, generated_at):
                     continue
+                if fixtures is not None:
+                    fixture = (str(row["match_name"]).strip(), str(row["kickoff_utc"]).strip())
+                    fixtures.setdefault(str(row["match_id"]), set()).add(fixture)
                 key = (str(run_id), str(row["match_id"]))
                 if key in seen_keys:
                     continue
@@ -189,6 +196,78 @@ def audit_existing_database(candidate_keys):
     }
 
 
+
+def audit_name_date_crosswalk(fixtures):
+    """Read-only, aggregate-only crosswalk; never creates or persists links.
+
+    Unique candidates require ordered home/away names, compatible squad
+    markers, both team similarities >= 0.95, and kickoff within 12 hours.
+    Conflicting archive records and multiple canonical candidates are
+    ambiguous. No identifiers or team names are returned.
+    """
+    if not fixtures:
+        return {
+            "fixtures_examined": 0, "unique_crosswalk_candidates": 0,
+            "ambiguous_crosswalk_candidates": 0, "no_crosswalk_candidate": 0,
+            "conflicting_archive_fixtures": 0,
+            "crosswalk_policy": "READ_ONLY_AGGREGATE_ONLY_NO_LINKS",
+        }
+    uri = f"file:{DB_PATH.resolve().as_posix()}?mode=ro"
+    with sqlite3.connect(uri, uri=True) as conn:
+        rows = conn.execute(
+            "SELECT match_name, match_date FROM matches WHERE lower(sport)='football'"
+        ).fetchall()
+
+    canonical = []
+    for name, kickoff in rows:
+        home, away = split_teams(name)
+        dt = parse_date(kickoff)
+        if home and away and dt:
+            canonical.append((home, away, dt))
+
+    unique = ambiguous = none = conflicts = 0
+    for variants in fixtures.values():
+        if len(variants) != 1:
+            conflicts += 1
+            ambiguous += 1
+            continue
+        name, kickoff = next(iter(variants))
+        home, away = split_teams(name)
+        dt = parse_date(kickoff)
+        if not home or not away or not dt:
+            none += 1
+            continue
+        candidates = 0
+        for canonical_home, canonical_away, canonical_dt in canonical:
+            delta = abs((dt - canonical_dt).total_seconds()) / 3600
+            if delta > MAX_DATE_DELTA_HOURS:
+                continue
+            if not squad_compatible(home, canonical_home):
+                continue
+            if not squad_compatible(away, canonical_away):
+                continue
+            if similarity(home, canonical_home) < 0.95:
+                continue
+            if similarity(away, canonical_away) < 0.95:
+                continue
+            candidates += 1
+        if candidates == 1:
+            unique += 1
+        elif candidates > 1:
+            ambiguous += 1
+        else:
+            none += 1
+
+    return {
+        "fixtures_examined": len(fixtures),
+        "unique_crosswalk_candidates": unique,
+        "ambiguous_crosswalk_candidates": ambiguous,
+        "no_crosswalk_candidate": none,
+        "conflicting_archive_fixtures": conflicts,
+        "crosswalk_policy": "READ_ONLY_AGGREGATE_ONLY_NO_LINKS",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true",
@@ -200,6 +279,7 @@ def main():
     scanned = artifacts_seen = rows = inserted = 0
     details = []
     seen_keys = set()
+    archived_fixtures = {}
     with tempfile.TemporaryDirectory(prefix="betclic-backfill-") as tmp:
         root = Path(tmp)
         for run_id, created_at in runs:
@@ -208,7 +288,7 @@ def main():
                 artifacts_seen += 1
                 try:
                     result = process_artifact(
-                        run_id, artifact_created_at, name, root, args.apply, seen_keys)
+                        run_id, artifact_created_at, name, root, args.apply, seen_keys, archived_fixtures)
                     rows += result["rows"]
                     inserted += result["inserted"]
                     if result["csv"] and result["rows"]:
@@ -217,6 +297,7 @@ def main():
                     print(f"ARTIFACT_SKIP run={run_id} name={name} reason=download_or_api_error")
     audit = audit_existing_database(seen_keys)
     print("BACKFILL_DATABASE_AUDIT", audit)
+    print("BACKFILL_NAME_DATE_CROSSWALK", audit_name_date_crosswalk(archived_fixtures))
     print("BACKFILL_SUMMARY", {
         "mode": "APPLY" if args.apply else "DRY_RUN",
         "successful_main_runs": scanned,

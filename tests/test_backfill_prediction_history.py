@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from backfill_prediction_history import admissible_row, audit_existing_database
+from backfill_prediction_history import (admissible_row, audit_existing_database, audit_name_date_crosswalk)
 
 
 class BackfillValidationTests(unittest.TestCase):
@@ -89,6 +89,49 @@ class BackfillDatabaseAuditTests(unittest.TestCase):
                     conn.execute("SELECT COUNT(*) FROM prediction_history").fetchone()[0],
                     1,
                 )
+
+
+class HistoricalCrosswalkTests(unittest.TestCase):
+    def test_crosswalk_is_read_only_strict_and_aggregate_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = Path(tmp) / "history.db"
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("CREATE TABLE matches (match_id TEXT, match_name TEXT, match_date TEXT, sport TEXT)")
+                conn.executemany(
+                    "INSERT INTO matches VALUES (?, ?, ?, ?)",
+                    [
+                        ("private-1", "Arsenal - Chelsea", "2026-11-27T20:00:00Z", "football"),
+                        ("private-2", "Liverpool - Everton", "2026-11-27T20:00:00Z", "football"),
+                        ("private-3", "Liverpool - Everton", "2026-11-27T20:00:00Z", "football"),
+                        ("private-4", "Arsenal Women - Chelsea Women", "2026-11-27T20:00:00Z", "football"),
+                    ],
+                )
+            fixtures = {
+                "archive-a": {("Arsenal - Chelsea", "2026-11-27T20:00:00Z")},
+                "archive-b": {("Liverpool - Everton", "2026-11-27T20:00:00Z")},
+                "archive-c": {("Manchester - City", "2026-11-27T20:00:00Z")},
+                "archive-d": {
+                    ("Arsenal - Chelsea", "2026-11-27T20:00:00Z"),
+                    ("Arsenal - Chelsea", "2026-11-27T21:00:00Z"),
+                },
+                "archive-e": {("Chelsea - Arsenal", "2026-11-27T20:00:00Z")},
+                "archive-f": {("Arsenal - Chelsea", "2026-11-28T10:00:00Z")},
+            }
+            with patch("backfill_prediction_history.DB_PATH", db_path):
+                audit = audit_name_date_crosswalk(fixtures)
+            self.assertEqual(audit["fixtures_examined"], 6)
+            self.assertEqual(audit["unique_crosswalk_candidates"], 1)
+            self.assertEqual(audit["ambiguous_crosswalk_candidates"], 2)
+            self.assertEqual(audit["no_crosswalk_candidate"], 3)
+            self.assertEqual(audit["conflicting_archive_fixtures"], 1)
+            self.assertEqual(audit["crosswalk_policy"], "READ_ONLY_AGGREGATE_ONLY_NO_LINKS")
+            self.assertNotIn("private-1", str(audit))
+            self.assertNotIn("Arsenal", str(audit))
+            with sqlite3.connect(db_path) as conn:
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0], 4)
+                self.assertFalse(conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='validated_match_links'"
+                ).fetchone())
 
 
 if __name__ == "__main__":
