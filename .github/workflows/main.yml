@@ -172,7 +172,7 @@ jobs:
         run: python match_validation_registry.py
 
       - name: Publier les rapports et le modele experimental
-        if: always() && (hashFiles('reports/*.csv') != '' || hashFiles('artifacts/*.joblib') != '')
+        if: always() && (hashFiles('reports/prediction_feedback_status.csv') != '' || hashFiles('reports/prediction_history_evaluation.csv') != '')
         uses: actions/upload-artifact@v4
         with:
           name: betclic-model-and-reports-${{ github.run_id }}
