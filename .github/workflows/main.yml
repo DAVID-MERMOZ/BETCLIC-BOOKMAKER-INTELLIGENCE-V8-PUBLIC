@@ -14,6 +14,9 @@ on:
       - "README.md"
       - ".github/workflows/main.yml"
       - ".github/workflows/pilot-validation.yml"
+      - "database_diagnostic.py"
+      - "odds_analysis.py"
+      - "match_validation_registry.py"
       - "telegram_notify.py"
       - "telegram_dedup.py"
       - "daily_fixture_sample.py"
@@ -163,33 +166,19 @@ jobs:
       - name: Generer le rapport de rapprochement (lecture seule)
         run: python match_results_report.py
 
-      - name: Mettre a jour le registre persistant de validation humaine
+      - name: Generer le registre de validation humaine localement (non publie)
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
-        run: |
-          set -euo pipefail
-          # Synchroniser AVANT de regenerer le CSV pour eviter un conflit
-          # entre une copie de registre ancienne et les validations recentes.
-          git pull --rebase origin main
-          python match_validation_registry.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports/match_validation_registry.csv
-          if ! git diff --cached --quiet; then
-            git commit -m "Mettre a jour le registre de validation Betclic"
-            git push
-          else
-            echo "Registre inchange : aucun commit necessaire."
-          fi
+        run: python match_validation_registry.py
 
       - name: Publier les rapports et le modele experimental
-        if: always() && (hashFiles('reports/*.csv') != '' || hashFiles('artifacts/*.joblib') != '')
+        if: always() && (hashFiles('reports/prediction_feedback_status.csv') != '' || hashFiles('reports/prediction_history_evaluation.csv') != '')
         uses: actions/upload-artifact@v4
         with:
           name: betclic-model-and-reports-${{ github.run_id }}
           path: |
-            reports/*.csv
-            artifacts/*.joblib
+            reports/prediction_feedback_status.csv
+            reports/prediction_history_evaluation.csv
           if-no-files-found: warn
           retention-days: 30
 
