@@ -3,7 +3,8 @@ from datetime import datetime, timezone, timedelta
 
 from team_form_model_experiment import (team_form, evaluate, fit_final_model, team_key,
                                         latest_complete_1x2_snapshot, prediction_action_status,
-                                        team_form_features, _history_from_provider_rows)
+                                        team_form_features, _history_from_provider_rows,
+                                        public_evaluation_summary)
 from baseline_market_evaluation import CLASSES
 from daily_fixture_sample import market_anchored_probabilities
 
@@ -167,6 +168,22 @@ class TeamFormTests(unittest.TestCase):
             validate_probability_map({"HOME": .2, "DRAW": .3, "AWAY": .4})
         with self.assertRaises(ValueError):
             validate_probability_map({"HOME": 1.1, "DRAW": -.1, "AWAY": 0.0})
+
+    def test_public_evaluation_summary_removes_raw_match_ids(self):
+        result = {
+            "status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED",
+            "walk_forward_groups": [{
+                "kickoff": "2026-11-21T18:00:00+00:00",
+                "train_n": 60,
+                "test_group_n": 2,
+                "match_ids": ["private-id-1", "private-id-2"],
+            }],
+        }
+        safe = public_evaluation_summary(result)
+        self.assertNotIn("match_ids", safe["walk_forward_groups"][0])
+        self.assertEqual(safe["walk_forward_groups"][0]["test_group_n"], 2)
+        self.assertEqual(result["walk_forward_groups"][0]["match_ids"],
+                         ["private-id-1", "private-id-2"])
 
     def test_walk_forward_uses_only_prior_samples(self):
         rows = []

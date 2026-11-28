@@ -145,21 +145,7 @@ def main():
             print("- Combinaisons identiques observées à plusieurs dates : "
                   f"{same_payload_other_times}")
 
-            examples = conn.execute("""
-                SELECT match_id, market_name, selection_name, odds,
-                       suspended, collected_at, COUNT(*) AS copies
-                FROM odds_history
-                GROUP BY match_id, market_name, selection_name,
-                         odds, suspended, collected_at
-                HAVING COUNT(*) > 1
-                ORDER BY copies DESC, collected_at DESC
-                LIMIT 10
-            """).fetchall()
-            print("- 10 exemples (match, marché, sélection, cote, suspendu, "
-                  "date, copies) :")
-            for row in examples:
-                print("  ", row)
-
+            print("- Détails des lignes d’exemple masqués dans les journaux publics.")
 
             if "matches" in tables:
                 orphaned = conn.execute("""

@@ -581,6 +581,19 @@ def train_and_predict(samples, db_path=DB_PATH, evaluation_status=None):
     return True
 
 
+def public_evaluation_summary(result):
+    """Remove private fixture identifiers from public workflow log output."""
+    summary = dict(result)
+    groups = summary.get("walk_forward_groups", [])
+    if isinstance(groups, list):
+        summary["walk_forward_groups"] = [
+            {key: value for key, value in group.items() if key != "match_ids"}
+            if isinstance(group, dict) else group
+            for group in groups
+        ]
+    return summary
+
+
 def main():
     samples, rejected = build_team_dataset()
     market_rows, market_diag = build_dataset()
@@ -589,7 +602,7 @@ def main():
     print("Rejets agreges :", rejected)
     print("Diagnostic marche :", market_diag)
     result = evaluate(samples, market_rows)
-    print("Evaluation :", result)
+    print("Evaluation :", public_evaluation_summary(result))
     # L'entrainement final utilise tous les labels disponibles des trois classes.
     # La validation walk-forward est distincte du statut de maturite production.
     trained = train_and_predict(samples, evaluation_status=result["status"])

@@ -1,7 +1,10 @@
 import csv
+import io
 import sqlite3
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from unittest.mock import patch
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -75,6 +78,35 @@ class LightweightChangeCollectorTests(unittest.TestCase):
         self.assertEqual(output.read_text(encoding="utf-8"), first)
         with output.open(encoding="utf-8") as handle:
             self.assertEqual(len(list(csv.DictReader(handle))), 2)
+
+    def test_main_logs_aggregate_counts_without_fixture_names_or_ids(self):
+        from lightweight_change_collector import main
+
+        private_row = {
+            "match_id": "private-match-123",
+            "match_name": "Private Home - Private Away",
+            "match_date": "2026-11-30T18:00:00+00:00",
+            "market_name": "1X2",
+            "selection_name": "Private Home",
+            "previous_odds": 2.0,
+            "latest_odds": 1.9,
+            "odds_change_pct": -5.0,
+            "previous_suspended": 0,
+            "latest_suspended": 0,
+            "previous_snapshot_at": "2026-11-28T08:00:00+00:00",
+            "latest_snapshot_at": "2026-11-28T08:05:00+00:00",
+            "change_type": "ODDS_CHANGED",
+        }
+        output = io.StringIO()
+        report = Path(self.tmp.name) / "public-safe.csv"
+        with patch("lightweight_change_collector.collect_changes", return_value=[private_row]), \
+             patch("sys.argv", ["lightweight_change_collector.py", "--db", str(self.db),
+                                "--output", str(report)]), \
+             redirect_stdout(output):
+            self.assertEqual(main(), 0)
+        self.assertIn("MATCHS A REEVALUER : 1", output.getvalue())
+        self.assertNotIn("private-match-123", output.getvalue())
+        self.assertNotIn("Private Home", output.getvalue())
 
     def test_ignores_change_when_latest_snapshot_is_stale(self):
         changes = collect_changes(
