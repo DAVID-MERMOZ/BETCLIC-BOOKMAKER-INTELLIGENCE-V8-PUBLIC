@@ -1,19 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "signature": "f3df4f2ed12e875516439ffbab8daf1578069c2f8893e171b561460117f17791",
-      "total_parts": 7
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -183,7 +169,7 @@
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.762,
           "over_2_5": 0.521,
-          "over_3_5": 0.299,
+          "over_3_5": 0.3,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
           "prob_away": 0.095,
@@ -444,7 +430,7 @@
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.812,
           "over_2_5": 0.594,
-          "over_3_5": 0.37,
+          "over_3_5": 0.371,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
           "prob_away": 0.675,
@@ -559,7 +545,7 @@
           "max_abs_edge_pp": 17.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.815,
-          "over_2_5": 0.598,
+          "over_2_5": 0.599,
           "over_3_5": 0.375,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
@@ -588,7 +574,7 @@
           "max_abs_edge_pp": 18.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.847,
-          "over_2_5": 0.649,
+          "over_2_5": 0.65,
           "over_3_5": 0.43,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
@@ -617,8 +603,8 @@
           "max_abs_edge_pp": 13.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.806,
-          "over_2_5": 0.584,
-          "over_3_5": 0.36,
+          "over_2_5": 0.585,
+          "over_3_5": 0.361,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
           "prob_away": 0.281,
@@ -830,8 +816,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-28T06:17:28.419780+00:00",
-      "signature": "61b53adf69535d039d3cf4026e5d18cde43047830ff4840a6a570cd75671d891"
+      "sent_at_utc": "2026-11-28T06:22:47.849949+00:00",
+      "signature": "f3df4f2ed12e875516439ffbab8daf1578069c2f8893e171b561460117f17791"
     }
   },
   "version": 1
