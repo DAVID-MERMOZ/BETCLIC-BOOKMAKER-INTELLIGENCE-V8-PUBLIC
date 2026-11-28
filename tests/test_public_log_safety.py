@@ -19,6 +19,8 @@ class PublicDataSafetyTests(unittest.TestCase):
         self.assertIn("reports/prediction_history_evaluation.csv", artifact)
         self.assertNotIn("reports/*.csv", artifact)
         self.assertNotIn("artifacts/*.joblib", artifact)
+        self.assertNotIn("reports/*.csv", workflow)
+        self.assertNotIn("artifacts/*.joblib", workflow)
 
     def test_pilot_workflow_does_not_publish_private_fixture_artifacts(self):
         workflow = (ROOT / ".github" / "workflows" / "pilot-validation.yml").read_text(
