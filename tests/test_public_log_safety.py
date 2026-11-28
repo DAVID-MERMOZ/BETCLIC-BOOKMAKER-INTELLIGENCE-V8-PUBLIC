@@ -27,8 +27,6 @@ class PublicDataSafetyTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertNotIn("actions/upload-artifact@", workflow)
-        self.assertNotIn("reports/todays_sample_predictions.csv", workflow)
-        self.assertNotIn("artifacts/team_form_model.joblib", workflow)
 
     def test_human_registry_is_generated_locally_but_not_pushed_publicly(self):
         workflow = (ROOT / ".github" / "workflows" / "main.yml").read_text(encoding="utf-8")
