@@ -1,4 +1,5 @@
 import unittest
+import json
 from html.parser import HTMLParser
 from unittest.mock import Mock
 from telegram_notify import build_message, build_messages, format_kickoff, send_telegram
@@ -205,20 +206,64 @@ class TelegramHybridDedupTests(unittest.TestCase):
 
     def test_metadata_and_row_order_only_do_not_trigger_message(self):
         sender = Mock()
-        initial = [dict(self.rows[0], web_research_status="NO_RECENT_RESULTS",
-                        web_research_findings_json="[]")]
+        second = dict(
+            self.rows[0], match_id="fixture-43", match_name="Beta - Gamma",
+            kickoff_utc="2026-11-25T18:00:00+00:00",
+        )
+        initial = [
+            dict(self.rows[0], web_research_status="NO_RECENT_RESULTS",
+                 web_research_findings_json="[]"),
+            second,
+        ]
         self._process(initial, sender)
-        metadata_only = [dict(
-            self.rows[0],
-            generated_at_utc="2099-01-01T00:00:00Z",
-            training_n="999",
-            run_id="different",
-            web_research_status="SEARCH_ERROR",
-            web_research_findings_json='[{"title":"new search metadata"}]',
-        )]
+        metadata_only = [
+            dict(
+                second,
+                generated_at_utc="2099-01-01T00:00:00Z",
+                training_n="999",
+                run_id="different",
+                web_research_status="SEARCH_ERROR",
+                web_research_findings_json='[{"title":"new search metadata"}]',
+            ),
+            dict(
+                self.rows[0],
+                generated_at_utc="2099-01-01T00:00:00Z",
+                training_n="999",
+                run_id="different",
+                web_research_status="SEARCH_ERROR",
+                web_research_findings_json='[{"title":"new search metadata"}]',
+            ),
+        ]
         result = self._process(metadata_only, sender)
         self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
         self.assertEqual(sender.call_count, 1)
+
+    def test_equivalent_kickoff_and_display_rounding_do_not_trigger_revision(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        equivalent = [dict(
+            self.rows[0],
+            kickoff_utc="2026-11-24T19:00:00+01:00",
+            prob_home="0.61231",
+            prob_draw="0.24002",
+            prob_away="0.14767",
+            lambda_home="1.4501",
+        )]
+        result = self._process(equivalent, sender)
+        self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
+        self.assertEqual(sender.call_count, 1)
+
+    def test_visible_market_movement_change_triggers_revision(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        changed = [dict(
+            self.rows[0],
+            market_movement_status="SIGNIFICANT_MOVE",
+            market_movement_pattern="HOME_SHORTENING",
+        )]
+        result = self._process(changed, sender)
+        self.assertEqual(result["status"], "REVISION_SENT")
+        self.assertEqual(sender.call_count, 2)
 
     def test_market_probability_change_triggers_revision(self):
         sender = Mock()
@@ -259,6 +304,118 @@ class TelegramHybridDedupTests(unittest.TestCase):
         self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
         self.assertEqual(sender.call_count, 1)
 
+
+    def test_persisted_state_contains_only_digest_and_count(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        state = json.loads(self.state_path.read_text(encoding="utf-8"))
+        entry = state["sources"]["todays_sample_predictions.csv"]
+        self.assertEqual(state["version"], 2)
+        self.assertEqual(set(entry), {"signature", "match_count", "sent_at_utc"})
+        self.assertEqual(entry["match_count"], 1)
+        serialized = json.dumps(state)
+        self.assertNotIn("fixture-42", serialized)
+        self.assertNotIn("Alpha - Beta", serialized)
+        self.assertNotIn("prob_home", serialized)
+
+    def test_legacy_state_migrates_without_resending_or_losing_signature(self):
+        from telegram_dedup import canonical_prediction_table, _signature
+
+        canonical = canonical_prediction_table(self.rows)
+        signature = _signature(canonical)
+        legacy = {
+            "version": 1,
+            "sources": {
+                "todays_sample_predictions.csv": {
+                    "signature": signature,
+                    "predictions": canonical,
+                    "sent_at_utc": "2026-11-24T18:00:00+00:00",
+                }
+            },
+            "pending": {},
+        }
+        self.state_path.write_text(json.dumps(legacy), encoding="utf-8")
+        sender = Mock()
+        result = self._process(self.rows, sender)
+        self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
+        self.assertEqual(sender.call_count, 0)
+        migrated = json.loads(self.state_path.read_text(encoding="utf-8"))
+        self.assertEqual(migrated["version"], 2)
+        self.assertEqual(migrated["sources"]["todays_sample_predictions.csv"]["signature"], signature)
+        self.assertNotIn("predictions", migrated["sources"]["todays_sample_predictions.csv"])
+        self.assertNotIn("fixture-42", json.dumps(migrated))
+
+    def test_partial_message_failure_retries_only_unsent_parts(self):
+        from telegram_dedup import process_predictions
+
+        messages = ["part-1", "part-2", "part-3"]
+        builder = lambda rows, url, revision=False: messages
+        attempts = []
+
+        def fail_on_second(message, token, chat_id):
+            attempts.append(message)
+            if len(attempts) == 2:
+                raise RuntimeError("temporary failure")
+
+        with self.assertRaises(RuntimeError):
+            process_predictions(
+                self.rows, "token", "chat", "https://example.test/run",
+                "todays_sample_predictions.csv", builder, fail_on_second,
+                state_path=self.state_path, commit_to_git=False,
+            )
+        self.assertEqual(attempts, ["part-1", "part-2"])
+        pending = json.loads(self.state_path.read_text(encoding="utf-8"))["pending"]
+        self.assertEqual(pending["todays_sample_predictions.csv"]["sent_parts"], [0])
+
+        retry_sender = Mock()
+        result = process_predictions(
+            self.rows, "token", "chat", "https://example.test/run",
+            "todays_sample_predictions.csv", builder, retry_sender,
+            state_path=self.state_path, commit_to_git=False,
+        )
+        self.assertEqual(result["status"], "FIRST_TABLE_SENT")
+        self.assertEqual([call.args[0] for call in retry_sender.call_args_list], ["part-2", "part-3"])
+
+    def test_new_signature_does_not_overwrite_incomplete_notification(self):
+        from telegram_dedup import process_predictions
+
+        messages = ["part-1", "part-2"]
+        attempts = []
+
+        def fail_on_second(message, token, chat_id):
+            attempts.append(message)
+            if message == "part-2":
+                raise RuntimeError("temporary Telegram failure")
+
+        with self.assertRaises(RuntimeError):
+            process_predictions(
+                self.rows, "token", "chat", "https://example.test/run",
+                "todays_sample_predictions.csv",
+                lambda rows, url, revision=False: messages,
+                fail_on_second, state_path=self.state_path, commit_to_git=False,
+            )
+        before = json.loads(self.state_path.read_text(encoding="utf-8"))
+        pending_before = before["pending"]["todays_sample_predictions.csv"]
+
+        changed = [dict(
+            self.rows[0], prediction_1x2="DRAW",
+            prob_home="0.20", prob_draw="0.60", prob_away="0.20",
+        )]
+        retry_sender = Mock()
+        with self.assertRaisesRegex(RuntimeError, "notification Telegram précédente est incomplète"):
+            process_predictions(
+                changed, "token", "chat", "https://example.test/run",
+                "todays_sample_predictions.csv",
+                lambda rows, url, revision=False: ["new-revision"],
+                retry_sender, state_path=self.state_path, commit_to_git=False,
+            )
+
+        after = json.loads(self.state_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            after["pending"]["todays_sample_predictions.csv"], pending_before
+        )
+        self.assertEqual(retry_sender.call_count, 0)
+        self.assertEqual(attempts, ["part-1", "part-2"])
 
     def test_notification_workflows_share_serialized_concurrency_group(self):
         from pathlib import Path
