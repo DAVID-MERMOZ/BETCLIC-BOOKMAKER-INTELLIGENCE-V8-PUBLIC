@@ -1,19 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "signature": "61b53adf69535d039d3cf4026e5d18cde43047830ff4840a6a570cd75671d891",
-      "total_parts": 7
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -86,22 +72,22 @@
           "kickoff_utc": "2026-11-28T15:00:00+00:00",
           "lambda_away": 1.59,
           "lambda_home": 2.0,
-          "market_prob_away": 0.327,
+          "market_prob_away": 0.322,
           "market_prob_draw": 0.253,
-          "market_prob_home": 0.42,
+          "market_prob_home": 0.424,
           "market_status": "AVAILABLE",
           "match_key": "1274385786740736",
           "match_name": "Manchester United - Brentford",
-          "max_abs_edge_pp": 28.2,
+          "max_abs_edge_pp": 28.6,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.874,
           "over_2_5": 0.696,
           "over_3_5": 0.484,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.344,
-          "prob_draw": 0.278,
-          "prob_home": 0.378,
+          "prob_away": 0.34,
+          "prob_draw": 0.279,
+          "prob_home": 0.381,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -444,7 +430,7 @@
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.812,
           "over_2_5": 0.594,
-          "over_3_5": 0.371,
+          "over_3_5": 0.37,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
           "prob_away": 0.675,
@@ -608,22 +594,22 @@
           "kickoff_utc": "2026-11-28T10:00:00+00:00",
           "lambda_away": 1.26,
           "lambda_home": 1.78,
-          "market_prob_away": 0.29,
-          "market_prob_draw": 0.299,
-          "market_prob_home": 0.411,
+          "market_prob_away": 0.299,
+          "market_prob_draw": 0.294,
+          "market_prob_home": 0.407,
           "market_status": "AVAILABLE",
           "match_key": "1288605673738240",
           "match_name": "FC Vitebsk - Arsenal Dzerzhinsk",
-          "max_abs_edge_pp": 13.3,
+          "max_abs_edge_pp": 13.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.806,
           "over_2_5": 0.584,
           "over_3_5": 0.36,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.273,
-          "prob_draw": 0.295,
-          "prob_home": 0.431,
+          "prob_away": 0.281,
+          "prob_draw": 0.291,
+          "prob_home": 0.428,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -695,22 +681,22 @@
           "kickoff_utc": "2026-11-28T13:30:00+00:00",
           "lambda_away": 1.57,
           "lambda_home": 1.44,
-          "market_prob_away": 0.537,
-          "market_prob_draw": 0.279,
-          "market_prob_home": 0.184,
+          "market_prob_away": 0.534,
+          "market_prob_draw": 0.276,
+          "market_prob_home": 0.19,
           "market_status": "AVAILABLE",
           "match_key": "1290610434670592",
           "match_name": "Chippa United - Kaizer Chiefs",
-          "max_abs_edge_pp": 14.3,
+          "max_abs_edge_pp": 14.6,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.802,
           "over_2_5": 0.579,
           "over_3_5": 0.355,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
-          "prob_away": 0.521,
-          "prob_draw": 0.3,
-          "prob_home": 0.178,
+          "prob_away": 0.519,
+          "prob_draw": 0.298,
+          "prob_home": 0.183,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -830,8 +816,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-28T05:47:00.443440+00:00",
-      "signature": "daab61773c9bf4f0086e44f9c2abf5f4981e638e25c2e50ac8095ebd347c4aec"
+      "sent_at_utc": "2026-11-28T06:17:28.419780+00:00",
+      "signature": "61b53adf69535d039d3cf4026e5d18cde43047830ff4840a6a570cd75671d891"
     }
   },
   "version": 1
