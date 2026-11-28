@@ -1,4 +1,5 @@
 import sqlite3
+from collections import Counter
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
@@ -261,37 +262,21 @@ def save_alerts(alerts):
 
 
 def show_recent_alerts(limit=20):
+    # Public logs retain only aggregate alert types, never fixture names or odds.
     with get_connection() as conn:
         rows = conn.execute("""
-            SELECT
-                match_name,
-                market_name,
-                selection_name,
-                alert_type,
-                direction,
-                variation,
-                observed_at
+            SELECT alert_type
             FROM odds_alerts
             ORDER BY observed_at DESC
             LIMIT ?
         """, (limit,)).fetchall()
 
     print("\n========== HISTORIQUE DES ALERTES ==========")
-
     if not rows:
         print("Aucune alerte enregistrée.")
         return
-
-    for row in rows:
-        name, market, selection, alert_type, direction, variation, date = row
-
-        print("\nMatch :", name)
-        print("Marché :", market)
-        print("Sélection :", selection)
-        print("Type :", alert_type)
-        print("Direction :", direction)
-        print("Variation :", f"{variation:+.2f}%")
-        print("Date :", date)
+    print("Alertes récentes (détails masqués) :", len(rows))
+    print("Répartition par type :", dict(Counter(row[0] for row in rows)))
 
 
 def main():
@@ -316,9 +301,9 @@ def main():
 
     all_alerts = []
 
-    for match_id, match_name, kickoff in matches:
+    for index, (match_id, match_name, kickoff) in enumerate(matches, 1):
 
-        print("\nAnalyse pré-match :", match_name, "| Début UTC :", kickoff.isoformat())
+        print(f"\nAnalyse pré-match {index}/{len(matches)} (détails masqués)")
 
         with get_connection() as conn:
             markets = conn.execute("""
@@ -346,15 +331,9 @@ def main():
 
     if not all_alerts:
         print("Aucun mouvement ne dépasse les seuils définis.")
-
-    for alert in all_alerts[:20]:
-        print(
-            f"\n{alert['match']} | "
-            f"{alert['selection']} | "
-            f"{alert['type']} | "
-            f"{alert['direction']} | "
-            f"{alert['variation']:+.2f}%"
-        )
+    else:
+        print("Détails des alertes masqués dans les journaux publics.")
+        print("Répartition par type :", dict(Counter(alert["type"] for alert in all_alerts)))
 
     print("\nAlertes détectées :", len(all_alerts))
     print("Nouvelles alertes enregistrées :", saved)
