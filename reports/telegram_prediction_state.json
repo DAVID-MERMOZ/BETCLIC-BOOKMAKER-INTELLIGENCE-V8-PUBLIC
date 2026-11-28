@@ -1,19 +1,5 @@
 {
-  "pending": {
-    "todays_sample_predictions.csv": {
-      "sent_parts": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6
-      ],
-      "signature": "daab61773c9bf4f0086e44f9c2abf5f4981e638e25c2e50ac8095ebd347c4aec",
-      "total_parts": 7
-    }
-  },
+  "pending": {},
   "sources": {
     "todays_sample_predictions.csv": {
       "predictions": [
@@ -86,22 +72,22 @@
           "kickoff_utc": "2026-11-28T15:00:00+00:00",
           "lambda_away": 1.59,
           "lambda_home": 2.0,
-          "market_prob_away": 0.325,
-          "market_prob_draw": 0.254,
-          "market_prob_home": 0.421,
+          "market_prob_away": 0.327,
+          "market_prob_draw": 0.253,
+          "market_prob_home": 0.42,
           "market_status": "AVAILABLE",
           "match_key": "1274385786740736",
           "match_name": "Manchester United - Brentford",
-          "max_abs_edge_pp": 28.3,
+          "max_abs_edge_pp": 28.2,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.874,
           "over_2_5": 0.696,
           "over_3_5": 0.484,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.342,
-          "prob_draw": 0.279,
-          "prob_home": 0.379,
+          "prob_away": 0.344,
+          "prob_draw": 0.278,
+          "prob_home": 0.378,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -144,22 +130,22 @@
           "kickoff_utc": "2026-11-28T15:00:00+00:00",
           "lambda_away": 1.26,
           "lambda_home": 1.84,
-          "market_prob_away": 0.157,
-          "market_prob_draw": 0.206,
-          "market_prob_home": 0.638,
+          "market_prob_away": 0.154,
+          "market_prob_draw": 0.203,
+          "market_prob_home": 0.642,
           "market_status": "AVAILABLE",
           "match_key": "1274386241814536",
           "match_name": "Leeds - Coventry",
-          "max_abs_edge_pp": 4.2,
+          "max_abs_edge_pp": 4.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.815,
           "over_2_5": 0.598,
           "over_3_5": 0.374,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
-          "prob_away": 0.159,
-          "prob_draw": 0.21,
-          "prob_home": 0.631,
+          "prob_away": 0.157,
+          "prob_draw": 0.208,
+          "prob_home": 0.635,
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         },
         {
@@ -183,7 +169,7 @@
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.762,
           "over_2_5": 0.521,
-          "over_3_5": 0.3,
+          "over_3_5": 0.299,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
           "prob_away": 0.095,
@@ -559,7 +545,7 @@
           "max_abs_edge_pp": 17.7,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.815,
-          "over_2_5": 0.599,
+          "over_2_5": 0.598,
           "over_3_5": 0.375,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
@@ -588,7 +574,7 @@
           "max_abs_edge_pp": 18.1,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.847,
-          "over_2_5": 0.65,
+          "over_2_5": 0.649,
           "over_3_5": 0.43,
           "prediction": "AWAY",
           "prediction_1x2": "AWAY",
@@ -617,8 +603,8 @@
           "max_abs_edge_pp": 13.3,
           "model_status": "EXPERIMENTAL_NOT_VALIDATED",
           "over_1_5": 0.806,
-          "over_2_5": 0.585,
-          "over_3_5": 0.361,
+          "over_2_5": 0.584,
+          "over_3_5": 0.36,
           "prediction": "HOME",
           "prediction_1x2": "HOME",
           "prob_away": 0.273,
@@ -830,8 +816,8 @@
           "validation_status": "TEAM_FORM_WALK_FORWARD_EXPERIMENT_COMPLETED"
         }
       ],
-      "sent_at_utc": "2026-11-28T05:39:10.087873+00:00",
-      "signature": "cded5843409032eb4e83febe5f983499dce2b948c9c10fdc1c14bd842dd95a1d"
+      "sent_at_utc": "2026-11-28T05:47:00.443440+00:00",
+      "signature": "daab61773c9bf4f0086e44f9c2abf5f4981e638e25c2e50ac8095ebd347c4aec"
     }
   },
   "version": 1
