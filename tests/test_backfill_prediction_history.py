@@ -80,6 +80,9 @@ class BackfillDatabaseAuditTests(unittest.TestCase):
             self.assertEqual(audit["new_candidate_keys"], 3)
             self.assertEqual(audit["candidate_matches_with_evaluated_prediction"], 1)
             self.assertEqual(audit["candidate_matches_with_unambiguous_confirmed_score"], 1)
+            self.assertNotIn("candidate_ids_sample", audit)
+            self.assertNotIn("m-1", audit["candidate_id_fingerprints_sample"])
+            self.assertNotIn("m-2", audit["confirmed_betclic_id_fingerprints_sample"])
 
             with sqlite3.connect(db_path) as conn:
                 self.assertEqual(

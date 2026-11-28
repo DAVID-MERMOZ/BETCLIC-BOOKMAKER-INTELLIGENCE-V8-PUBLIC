@@ -3,6 +3,7 @@
 Dry-run by default. Use --apply only inside the protected private-data runner.
 """
 import argparse
+import hashlib
 import csv
 import math
 import os
@@ -125,6 +126,11 @@ def process_artifact(run_id, generated_at, artifact, temp_root, apply, seen_keys
             "rows": valid_count, "inserted": inserted}
 
 
+def _id_fingerprint(value):
+    """Return a short, non-reversible diagnostic token for an identifier."""
+    return hashlib.sha256(str(value).encode("utf-8")).hexdigest()[:10]
+
+
 def audit_existing_database(candidate_keys):
     """Compare unique candidates with the restored DB without modifying it."""
     uri = f"file:{DB_PATH.resolve().as_posix()}?mode=ro"
@@ -174,12 +180,12 @@ def audit_existing_database(candidate_keys):
         "candidate_matches_with_unambiguous_confirmed_score": len(exact_confirmed_overlap),
         "trimmed_id_overlap_with_evaluated_prediction": len(trimmed_evaluated_overlap),
         "trimmed_id_overlap_with_confirmed_score": len(trimmed_confirmed_overlap),
-        "candidate_ids_sample": sorted(candidate_ids)[:25],
-        "confirmed_betclic_ids_sample": sorted(unambiguous_confirmed_ids)[:25],
-        "evaluated_prediction_ids_sample": sorted(evaluated_ids)[:25],
+        "candidate_id_fingerprints_sample": sorted(_id_fingerprint(value) for value in candidate_ids)[:25],
+        "confirmed_betclic_id_fingerprints_sample": sorted(_id_fingerprint(value) for value in unambiguous_confirmed_ids)[:25],
+        "evaluated_prediction_id_fingerprints_sample": sorted(_id_fingerprint(value) for value in evaluated_ids)[:25],
         "confirmed_links_total": len(unambiguous_confirmed_ids),
         "evaluated_match_ids_total": len(evaluated_ids),
-        "diagnostic_note": "ID-only comparison; samples are for manual diagnosis, never auto-link."
+        "diagnostic_note": "ID-only comparison; samples are SHA-256 fingerprints, not raw IDs; never auto-link."
     }
 
 
