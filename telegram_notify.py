@@ -112,13 +112,23 @@ def build_message(rows, run_url="", revision=False):
             f"{label} {_pct(row.get(field))}"
             for label, field in (("1", "prob_home"), ("N", "prob_draw"), ("2", "prob_away"))
         )
+        consensus_method = str(row.get("consensus_method") or "")
+        if consensus_method == "85_PERCENT_MARKET_15_PERCENT_EXPERIMENTAL_MODEL":
+            selection_label = "Sélection consensus (85% marché / 15% modèle expérimental)"
+            probability_label = "Probabilités consensus (1/N/2)"
+        elif consensus_method == "MODEL_ONLY_NO_FRESH_MARKET":
+            selection_label = "Sélection modèle (marché frais indisponible)"
+            probability_label = "Probabilités modèle (1/N/2)"
+        else:
+            selection_label = "Pronostic modèle"
+            probability_label = "Probabilités modèle (1/N/2)"
         block = [
             "",
             f"<b>Championnat : {competition}</b>",
             html.escape(format_kickoff(row.get("kickoff_utc"))),
             f"<b>{name}</b>",
-            f"Pronostic modèle : <b>{OUTCOMES.get(prediction, html.escape(str(prediction or 'n/d')))}</b>",
-            f"Probabilités modèle (1/N/2) : {probs}",
+            f"{selection_label} : <b>{OUTCOMES.get(prediction, html.escape(str(prediction or 'n/d')))}</b>",
+            f"{probability_label} : {probs}",
             _market_summary(row),
             f"Écart maximal modèle/marché : {_pct(float(row['max_abs_edge_pp']) / 100) if row.get('max_abs_edge_pp') not in (None, '') else 'n/d'}",
             f"Décision : <b>{html.escape(str(action)[:120])}</b>",

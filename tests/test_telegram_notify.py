@@ -59,6 +59,35 @@ class TelegramNotificationTests(unittest.TestCase):
         self.assertIn("Championnat : Ligue 1", message)
         self.assertIn("Over 2,5 : 56.0%", message)
 
+    def test_market_anchored_sample_is_labeled_as_consensus(self):
+        message = build_message([{
+            "competition_name": "Ligue 1",
+            "match_name": "Alpha - Beta",
+            "kickoff_utc": "2026-11-23T18:30:00Z",
+            "prediction_1x2": "HOME",
+            "prob_home": "0.58",
+            "prob_draw": "0.25",
+            "prob_away": "0.17",
+            "consensus_method": "85_PERCENT_MARKET_15_PERCENT_EXPERIMENTAL_MODEL",
+        }])
+        self.assertIn("Sélection consensus (85% marché / 15% modèle expérimental)", message)
+        self.assertIn("Probabilités consensus (1/N/2)", message)
+        self.assertNotIn("Pronostic modèle :", message)
+
+    def test_sample_without_fresh_market_is_labeled_as_model_only(self):
+        message = build_message([{
+            "competition_name": "Ligue 1",
+            "match_name": "Alpha - Beta",
+            "kickoff_utc": "2026-11-23T18:30:00Z",
+            "prediction_1x2": "HOME",
+            "prob_home": "0.58",
+            "prob_draw": "0.25",
+            "prob_away": "0.17",
+            "consensus_method": "MODEL_ONLY_NO_FRESH_MARKET",
+        }])
+        self.assertIn("Sélection modèle (marché frais indisponible)", message)
+        self.assertIn("Probabilités modèle (1/N/2)", message)
+
     def test_stale_market_snapshot_is_explicit_and_not_compared(self):
         message = build_message([{
             "competition_name": "Ligue 1",
