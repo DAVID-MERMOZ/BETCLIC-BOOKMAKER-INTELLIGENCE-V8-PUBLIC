@@ -1,5 +1,11 @@
 {
-  "pending": {},
+  "pending": {
+    "todays_sample_predictions.csv": {
+      "sent_parts": [],
+      "signature": "3ca920b6082682b31e06af478a37de33098114ba890b0f985cc16405900f5c65",
+      "total_parts": 7
+    }
+  },
   "sources": {
     "todays_sample_predictions.csv": {
       "match_count": 29,
