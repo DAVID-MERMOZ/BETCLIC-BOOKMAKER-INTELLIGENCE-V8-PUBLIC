@@ -1,4 +1,5 @@
 import unittest
+import json
 from html.parser import HTMLParser
 from unittest.mock import Mock
 from telegram_notify import build_message, build_messages, format_kickoff, send_telegram
@@ -259,6 +260,77 @@ class TelegramHybridDedupTests(unittest.TestCase):
         self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
         self.assertEqual(sender.call_count, 1)
 
+
+    def test_persisted_state_contains_only_digest_and_count(self):
+        sender = Mock()
+        self._process(self.rows, sender)
+        state = json.loads(self.state_path.read_text(encoding="utf-8"))
+        entry = state["sources"]["todays_sample_predictions.csv"]
+        self.assertEqual(state["version"], 2)
+        self.assertEqual(set(entry), {"signature", "match_count", "sent_at_utc"})
+        self.assertEqual(entry["match_count"], 1)
+        serialized = json.dumps(state)
+        self.assertNotIn("fixture-42", serialized)
+        self.assertNotIn("Alpha - Beta", serialized)
+        self.assertNotIn("prob_home", serialized)
+
+    def test_legacy_state_migrates_without_resending_or_losing_signature(self):
+        from telegram_dedup import canonical_prediction_table, _signature
+
+        canonical = canonical_prediction_table(self.rows)
+        signature = _signature(canonical)
+        legacy = {
+            "version": 1,
+            "sources": {
+                "todays_sample_predictions.csv": {
+                    "signature": signature,
+                    "predictions": canonical,
+                    "sent_at_utc": "2026-11-24T18:00:00+00:00",
+                }
+            },
+            "pending": {},
+        }
+        self.state_path.write_text(json.dumps(legacy), encoding="utf-8")
+        sender = Mock()
+        result = self._process(self.rows, sender)
+        self.assertEqual(result["status"], "UNCHANGED_SKIPPED")
+        self.assertEqual(sender.call_count, 0)
+        migrated = json.loads(self.state_path.read_text(encoding="utf-8"))
+        self.assertEqual(migrated["version"], 2)
+        self.assertEqual(migrated["sources"]["todays_sample_predictions.csv"]["signature"], signature)
+        self.assertNotIn("predictions", migrated["sources"]["todays_sample_predictions.csv"])
+        self.assertNotIn("fixture-42", json.dumps(migrated))
+
+    def test_partial_message_failure_retries_only_unsent_parts(self):
+        from telegram_dedup import process_predictions
+
+        messages = ["part-1", "part-2", "part-3"]
+        builder = lambda rows, url, revision=False: messages
+        attempts = []
+
+        def fail_on_second(message, token, chat_id):
+            attempts.append(message)
+            if len(attempts) == 2:
+                raise RuntimeError("temporary failure")
+
+        with self.assertRaises(RuntimeError):
+            process_predictions(
+                self.rows, "token", "chat", "https://example.test/run",
+                "todays_sample_predictions.csv", builder, fail_on_second,
+                state_path=self.state_path, commit_to_git=False,
+            )
+        self.assertEqual(attempts, ["part-1", "part-2"])
+        pending = json.loads(self.state_path.read_text(encoding="utf-8"))["pending"]
+        self.assertEqual(pending["todays_sample_predictions.csv"]["sent_parts"], [0])
+
+        retry_sender = Mock()
+        result = process_predictions(
+            self.rows, "token", "chat", "https://example.test/run",
+            "todays_sample_predictions.csv", builder, retry_sender,
+            state_path=self.state_path, commit_to_git=False,
+        )
+        self.assertEqual(result["status"], "FIRST_TABLE_SENT")
+        self.assertEqual([call.args[0] for call in retry_sender.call_args_list], ["part-2", "part-3"])
 
     def test_notification_workflows_share_serialized_concurrency_group(self):
         from pathlib import Path
