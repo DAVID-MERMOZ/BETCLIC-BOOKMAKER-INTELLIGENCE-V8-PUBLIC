@@ -93,18 +93,69 @@ def _signature(canonical):
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def load_state(path=STATE_PATH):
+def load_state(path=STATE_PATH, commit_to_git=None):
+    """Load dedup state and migrate legacy raw rows to a digest-only format."""
     path = Path(path)
     if not path.exists():
-        return {"version": 1, "sources": {}}
+        return {"version": 2, "sources": {}, "pending": {}}
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         # Fail closed: a damaged state must not cause an uncontrolled resend.
         raise RuntimeError(f"État anti-doublon Telegram illisible : {type(exc).__name__}.") from None
-    if not isinstance(state, dict) or state.get("version") != 1 or not isinstance(state.get("sources"), dict):
+    if not isinstance(state, dict) or not isinstance(state.get("sources"), dict):
         raise RuntimeError("Format de l'état anti-doublon Telegram non reconnu; envoi bloqué par sécurité.")
-    return state
+    if state.get("version") not in (1, 2):
+        raise RuntimeError("Version de l'état anti-doublon Telegram non reconnue; envoi bloqué par sécurité.")
+
+    # The public repository needs only signatures to compare tables. Do not
+    # persist fixture names, provider IDs, probabilities, scores or row payloads.
+    safe_sources = {}
+    for source_key, entry in state["sources"].items():
+        if not isinstance(entry, dict) or not entry.get("signature"):
+            raise RuntimeError("Entrée de l'état anti-doublon Telegram invalide; envoi bloqué par sécurité.")
+        predictions = entry.get("predictions")
+        if isinstance(predictions, list):
+            match_count = len(predictions)
+        else:
+            try:
+                match_count = max(0, int(entry.get("match_count", 0)))
+            except (TypeError, ValueError, OverflowError):
+                match_count = 0
+        safe_sources[str(source_key)] = {
+            "signature": str(entry["signature"]),
+            "match_count": match_count,
+            "sent_at_utc": str(entry.get("sent_at_utc") or ""),
+        }
+
+    raw_pending = state.get("pending", {})
+    if not isinstance(raw_pending, dict):
+        raise RuntimeError("État pending Telegram invalide; envoi bloqué par sécurité.")
+    safe_pending = {}
+    for source_key, entry in raw_pending.items():
+        if not isinstance(entry, dict) or not entry.get("signature"):
+            raise RuntimeError("Entrée pending Telegram invalide; envoi bloqué par sécurité.")
+        sent_parts = entry.get("sent_parts", [])
+        if not isinstance(sent_parts, list) or any(
+            not isinstance(index, int) or index < 0 for index in sent_parts
+        ):
+            raise RuntimeError("Progression pending Telegram invalide; envoi bloqué par sécurité.")
+        try:
+            total_parts = max(0, int(entry.get("total_parts", 0)))
+        except (TypeError, ValueError, OverflowError):
+            raise RuntimeError("Nombre de messages pending Telegram invalide; envoi bloqué par sécurité.") from None
+        safe_pending[str(source_key)] = {
+            "signature": str(entry["signature"]),
+            "sent_parts": sorted(set(sent_parts)),
+            "total_parts": total_parts,
+        }
+
+    normalized = {"version": 2, "sources": safe_sources, "pending": safe_pending}
+    if normalized != state:
+        # A v1 state may contain complete raw prediction rows. Replace it with
+        # the digest-only representation while preserving the sent signature.
+        save_state(normalized, path, commit_to_git=commit_to_git)
+    return normalized
 
 
 def save_state(state, path=STATE_PATH, commit_to_git=None):
@@ -186,7 +237,7 @@ def process_predictions(rows, token, chat_id, run_url, source_key,
         return {"status": "NO_VALID_PREDICTIONS", "sent": False}
     canonical = canonical_prediction_table(rows)
     signature = _signature(canonical)
-    state = load_state(state_path)
+    state = load_state(state_path, commit_to_git=commit_to_git)
     previous = state["sources"].get(source_key)
     pending = state.get("pending", {}).get(source_key)
     if previous and previous.get("signature") == signature and not pending:
@@ -213,7 +264,7 @@ def process_predictions(rows, token, chat_id, run_url, source_key,
         save_state(state, state_path, commit_to_git=commit_to_git)
 
     state["sources"][source_key] = {
-        "signature": signature, "predictions": canonical,
+        "signature": signature, "match_count": len(rows),
         "sent_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     state["pending"].pop(source_key, None)
